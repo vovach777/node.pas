@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{0FD3640A-A192-43DC-ACB1-3B0F15A28EB5}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Node.pas.dproj">
+            <Dependencies>duv\duv\duvLib.dproj</Dependencies>
+        </Projects>
+        <Projects Include="duv\duv\duvLib.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="Node_pas" DependsOnTargets="duvLib">
+        <MSBuild Projects="Node.pas.dproj"/>
+    </Target>
+    <Target Name="Node_pas:Clean" DependsOnTargets="duvLib:Clean">
+        <MSBuild Projects="Node.pas.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Node_pas:Make" DependsOnTargets="duvLib:Make">
+        <MSBuild Projects="Node.pas.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="duvLib">
+        <MSBuild Projects="duv\duv\duvLib.dproj"/>
+    </Target>
+    <Target Name="duvLib:Clean">
+        <MSBuild Projects="duv\duv\duvLib.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="duvLib:Make">
+        <MSBuild Projects="duv\duv\duvLib.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="Node_pas;duvLib"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="Node_pas:Clean;duvLib:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="Node_pas:Make;duvLib:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
