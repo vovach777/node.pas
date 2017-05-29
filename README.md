@@ -1,5 +1,5 @@
 # node.pas
-Event-driven progmming for EMB Delphi, powered by libuv.
+Event-driven programming for EMB Delphi, powered by libuv.
 
 NodeJs-like ecosystem
 ---------------------   
