@@ -1,7 +1,10 @@
 # node.pas
 Asynchronous Event-driven framework for modern EMB Delphi 10.2
+
 uses: libuv library
+
 platforms: win32,win64,linux64
+
 target: server applications
 
 NodeJS-like ecosystem
