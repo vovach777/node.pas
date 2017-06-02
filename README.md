@@ -1,10 +1,10 @@
 # node.pas
-Event-driven programming for EMB Delphi, powered by libuv.
+Event-driven programming for EMB Delphi 10.2, powered by libuv.
 
 NodeJs-like ecosystem
 ---------------------   
-* buffer (np.buffer.pas)
-* from duvLib: 
+* Buffer (np.buffer.pas)
+* From duvLib (libuv wrapper): 
   *  loop
   *  setTimeout
   *  setInterval
@@ -14,8 +14,8 @@ NodeJs-like ecosystem
   *  pipe
   *  tty
   *  child process
-* http server
-* https server powered by OpenSSL 1.1
-* Promise (np.promose.pas)
-
+* Http server
+* Https server powered by OpenSSL 1.1
+* Promises (np.promise.pas)
+* Experimental Http(s)-connect (uHttpConnect.pas)
 
