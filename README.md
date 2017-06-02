@@ -1,15 +1,19 @@
 # node.pas
-Event-driven programming for EMB Delphi 10.2, powered by libuv.
+Asynchronous Event-driven framework for modern EMB Delphi 10.2
+uses: libuv library
+platforms: win32,win64,linux64
+target: server applications
 
-NodeJs-like ecosystem
+NodeJS-like ecosystem
 ---------------------   
 * Buffer (np.buffer.pas)
 * From duvLib (libuv wrapper): 
   *  loop
-  *  setTimeout
-  *  setInterval
   *  setImmediate
   *  nextTick
+  *  EventEmmiter
+  *  setTimeout
+  *  setInterval
   *  tcp
   *  pipe
   *  tty
