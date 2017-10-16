@@ -1,13 +1,25 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{0FD3640A-A192-43DC-ACB1-3B0F15A28EB5}</ProjectGuid>
+        <ProjectGuid>{E743F11F-3E7A-4A89-9C8F-7463D57782B5}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
         <Projects Include="Node.pas.dproj">
-            <Dependencies>duv\duv\duvLib.dproj</Dependencies>
-        </Projects>
-        <Projects Include="duv\duv\duvLib.dproj">
             <Dependencies/>
+        </Projects>
+        <Projects Include="samples\ex01_LoopTTY.dproj">
+            <Dependencies>Node.pas.dproj</Dependencies>
+        </Projects>
+        <Projects Include="samples\ex02_Timers.dproj">
+            <Dependencies>Node.pas.dproj</Dependencies>
+        </Projects>
+        <Projects Include="samples\ex03_spawn.dproj">
+            <Dependencies>Node.pas.dproj</Dependencies>
+        </Projects>
+        <Projects Include="samples\ex04_tcp.dproj">
+            <Dependencies>Node.pas.dproj</Dependencies>
+        </Projects>
+        <Projects Include="samples\ex05_thread.dproj">
+            <Dependencies>Node.pas.dproj</Dependencies>
         </Projects>
     </ItemGroup>
     <ProjectExtensions>
@@ -17,32 +29,106 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="Node_pas" DependsOnTargets="duvLib">
+    <Target Name="Node_pas">
         <MSBuild Projects="Node.pas.dproj"/>
     </Target>
-    <Target Name="Node_pas:Clean" DependsOnTargets="duvLib:Clean">
+    <Target Name="Node_pas:Clean">
         <MSBuild Projects="Node.pas.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="Node_pas:Make" DependsOnTargets="duvLib:Make">
+    <Target Name="Node_pas:Make">
         <MSBuild Projects="Node.pas.dproj" Targets="Make"/>
     </Target>
-    <Target Name="duvLib">
-        <MSBuild Projects="duv\duv\duvLib.dproj"/>
+    <Target Name="ex01_LoopTTY" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex01_LoopTTY.dproj"/>
     </Target>
-    <Target Name="duvLib:Clean">
-        <MSBuild Projects="duv\duv\duvLib.dproj" Targets="Clean"/>
+    <Target Name="ex01_LoopTTY:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex01_LoopTTY.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="duvLib:Make">
-        <MSBuild Projects="duv\duv\duvLib.dproj" Targets="Make"/>
+    <Target Name="ex01_LoopTTY:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex01_LoopTTY.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ex02_Timers" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex02_Timers.dproj"/>
+    </Target>
+    <Target Name="ex02_Timers:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex02_Timers.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ex02_Timers:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex02_Timers.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ex03_spawn" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex03_spawn.dproj"/>
+    </Target>
+    <Target Name="ex03_spawn:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex03_spawn.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ex03_spawn:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex03_spawn.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ex04_tcp" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex04_tcp.dproj"/>
+    </Target>
+    <Target Name="ex04_tcp:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex04_tcp.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ex04_tcp:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex04_tcp.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ex05_thread" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex05_thread.dproj"/>
+    </Target>
+    <Target Name="ex05_thread:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex05_thread.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ex05_thread:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex05_thread.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="Node_pas;duvLib"/>
+        <CallTarget Targets="Node_pas;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Node_pas:Clean;duvLib:Clean"/>
+        <CallTarget Targets="Node_pas:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Node_pas:Make;duvLib:Make"/>
+        <CallTarget Targets="Node_pas:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+    <ItemGroup Condition="'$(BuildGroup)'=='buildGrp'">
+        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
+            <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
+            <Configurations>Debug</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex05_thread.dproj">
+            <ProjectGuid>{CC366E82-CDB2-49E5-9CC8-E074E4347D6B}</ProjectGuid>
+            <Configurations>Debug</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex04_tcp.dproj">
+            <ProjectGuid>{9C0042AA-C201-4ABA-B00E-2DC3864A9ED5}</ProjectGuid>
+            <Configurations>Debug</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex02_Timers.dproj">
+            <ProjectGuid>{734F8148-A3F6-44F0-A0CF-B262C6D232CD}</ProjectGuid>
+            <Configurations>Debug</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="Node.pas.dproj">
+            <ProjectGuid>{131351FD-84C3-4753-B152-30404E1DB43A}</ProjectGuid>
+            <Configurations>Debug</Configurations>
+            <Platforms>Win64</Platforms>
+            <Enabled>True</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex03_spawn.dproj">
+            <ProjectGuid>{6D9A2C5F-991F-4567-8636-697BA0C60F66}</ProjectGuid>
+            <Configurations>Release</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+    </ItemGroup>
 </Project>

@@ -9,6 +9,11 @@ interface
 //         PUTF8Char = _PAnsiChr;
 //         UTF8Char = AnsiChar;
 //  {$endif}
+{$IFNDEF NEXTGEN}
+   type
+     UTF8Char = AnsiChar;
+     PUTF8Char = PAnsiChar;
+{$ENDIF}
 
 const
   CP_USASCII = 20127;

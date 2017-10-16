@@ -29,20 +29,21 @@ package Node.pas;
 {$IMPLICITBUILD ON}
 
 requires
-  rtl,
-  duvLib;
+  rtl;
 
 contains
   np.OpenSSL in 'source\np.OpenSSL.pas',
   np.HttpServer in 'source\np.HttpServer.pas',
   np.HttpUt in 'source\np.HttpUt.pas',
-  np.mainLoop in 'source\np.mainLoop.pas',
   np.buffer in 'source\np.buffer.pas',
   np.buildData in 'source\np.buildData.pas',
   np.httpParser in 'source\np.httpParser.pas',
   np.NetEncoding in 'source\np.NetEncoding.pas',
   np.url in 'source\np.url.pas',
   np.ut in 'source\np.ut.pas',
-  np.promise in 'source\np.promise.pas';
+  np.promise in 'source\np.promise.pas',
+  np.core in 'source\np.core.pas',
+  np.libuv in 'source\np.libuv.pas',
+  np.winsock in 'source\np.winsock.pas';
 
 end.

@@ -1,8 +1,8 @@
 unit np.HttpServer;
 
 interface
-  uses sysUtils,duv.libuv, duv.tcp, duv.tcp.server, duv.tcp.client, np.httpParser, np.url, np.buildData, np.buffer,
-        np.HttpUt, duv.timer, np.OpenSSL, duv.types;
+  uses sysUtils, np.Core, np.httpParser, np.url, np.buildData, np.buffer,
+        np.HttpUt, np.OpenSSL, np.libuv;
 
   type
      IHttpRequest = interface
@@ -16,6 +16,7 @@ interface
         property Method : Utf8string read GetReqMethod;
         property Headers: THTTPHeader read GetReqHeaders;
      end;
+
      IHttpResponse = interface
      ['{21A7E87B-CC5A-45CB-A9F5-5C64EF696AB5}']
         procedure writeHeader(code:Integer);
@@ -23,19 +24,21 @@ interface
         procedure finish(data: BufferRef);
      end;
 
-     IHttpClient = interface(IDUVTCPStream)
+     IHttpClient = interface(INPTCPStream)
      ['{59E92408-C62D-4463-AAA1-C759CD776159}']
         procedure setOnRequest(proc: TProc);
      end;
 
-     IHttpServer = interface(IDUVTCPServer)
+     IHttpServer = interface(INPTCPServer)
      ['{FE95B0AB-BBD4-4BB3-8B59-55842AFEDE98}']
          procedure setOnRequest( aOnReq: TProc<IHttpRequest, IHttpResponse> );
          procedure setTimeout(value: int64);
          function getTimeout : int64;
          property timeout : int64 read GetTimeout write SetTimeout;
      end;
-     THttpServer = class(TDUVTCPServer, IHttpServer)
+
+
+     THttpServer = class(TNPTCPServer, IHttpServer)
      private
         FOnRequest : TProc<IHttpRequest, IHttpResponse>;
         FTimeout : int64;
@@ -49,12 +52,11 @@ interface
      end;
 
 implementation
-  uses np.mainLoop;
 
 type
-     THttpClient = class(TDUVTCPStream, IHttpClient, IHttpRequest, IHttpResponse)
+     THttpClient = class(TNPTCPStream, IHttpClient, IHttpRequest, IHttpResponse)
      type
-       TParseState = (psHeader,psBody,psProcess, psFin);
+       TParseState = (psHeader,psBody,psProcess, psUpgrade);
      private
         FKeepAlive : Boolean;
         Fstate : TParseState;
@@ -66,7 +68,7 @@ type
         FBody : bufferRef;
         FResponse: TBuildData;
         FBuf : BufferRef;
-        FTimeout: IDUVTimer;
+        FTimeout: INPTimer;
         FTimeoutValue : int64;
         FSSL : TSSL;
         Fin_bio : TBIO;
@@ -88,7 +90,7 @@ type
         function GetReqMethod : Utf8string;
         function GetReqHeaders : THTTPHeader;
      public
-        constructor Create( server: IDUVTCPServer; Actx : TSSL_CTX);
+        constructor Create( server: INPTCPServer; Actx : TSSL_CTX);
         destructor Destroy;override;
      end;
 
@@ -97,7 +99,7 @@ type
 
 constructor THttpServer.Create(const addr: string; port: word; isSec:Boolean; const certFn,keyFn:Utf8String);
 begin
-  inherited Create(mainLoop);
+  inherited Create;
   if isSec then
   begin
     Fctx := SSL_CTX_new( tls_server_method());
@@ -114,7 +116,7 @@ begin
   set_nodelay(true);
   listen(UV_DEFAULT_BACKLOG);
   setOnClient(
-         procedure (server: IDUVTCPServer)
+         procedure (server: INPTCPServer)
          var
            c : IHttpClient;
          begin
@@ -167,7 +169,7 @@ end;
 //   result := 1;
 //end;
 
-constructor THttpClient.Create(server: IDUVTCPServer; Actx : TSSL_CTX);
+constructor THttpClient.Create(server: INPTCPServer; Actx : TSSL_CTX);
 //var
 //  KEY_PASSWD : PAnsiChar;
 begin
@@ -209,8 +211,8 @@ begin
         do_handshake;
         if Fis_init_finished = 1 then
         begin
-          if FState = psFin then
-            exit;
+//          if FState = psFin then
+//            exit;
           repeat
             nbytes := SSL_read(FSSL,@FSSLData[0],length(FSSLData));
             if nbytes <= 0 then
@@ -357,7 +359,7 @@ begin
     else
     begin
       Fstate := psHeader;
-      mainLoop.setImmediate(
+      setImmediate(
         procedure
         begin
          processBuf;
@@ -395,7 +397,7 @@ begin
   end;
   if FTimeoutValue > 0 then
   begin
-    FTimeout := mainLoop.SetTimeout(
+    FTimeout := SetTimeout(
       procedure
       begin
         do_shutdown;
@@ -425,6 +427,11 @@ var
   headers : BufferRef;
 begin
   result := false;
+  if FState = psUpgrade then
+  begin
+
+  end;
+
   if FState = psProcess then
     exit;
 
@@ -469,7 +476,49 @@ procedure THttpClient.setOnRequest(proc: TProc);
 begin
   FOnRequest := proc;
 end;
-
+{
+function THttpClient.switchProtocol: INPStream;
+var
+ len,nbytes : integer;
+ buf : BufferRef;
+begin
+  result := self;
+  if FState = psProcess then
+  begin
+    if assigned(FTimeout) then
+    begin
+      FTimeout.Clear;
+      FTimeout := nil;
+    end;
+//    write(FResponse.Memory,FResponse.Position);
+    if assigned(FSSL) then
+    begin
+      nbytes := SSL_write(Fssl,FResponse.buf.ref, FResponse.buf.length);
+      assert( nbytes = FResponse.buf.length);
+      FResponse.buf.length := 0; //reset
+      buf := FResponse.buf.maximalize;
+      repeat
+        len := BIO_read(Fout_bio,buf.ref,buf.length);
+        if len <= 0 then
+          break;
+        write(buf.ref, len);
+      until false;
+    end
+    else
+    begin
+      write( FResponse.buf.ref, FResponse.buf.length );
+      FResponse.buf.length := 0; //reset
+    end;
+    Fstate := psUpgrade;
+      mainLoop.setImmediate(
+        procedure
+        begin
+         processBuf;
+        end);
+    end;
+  end;
+end;
+}
 procedure THttpClient.writeHeader(code: Integer);
 begin
   FResponse.buf.length := 0;

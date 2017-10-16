@@ -70,7 +70,7 @@ interface
   _unhandledRejectionFn : TProc<IValue>;
 
 implementation
-  uses np.mainLoop;
+  uses np.core;
 
   type
     IHandler = interface
@@ -156,7 +156,7 @@ constructor Tpromise.Create(const fn: TPromiseFunction);
     promise._handled := true;
     promise._AddRef;
     Adeferred._AddRef;
-    mainLoop.SetImmediate(
+    SetImmediate(
        procedure
        var
          cb : TPromiseResult;
@@ -232,7 +232,7 @@ constructor Tpromise.Create(const fn: TPromiseFunction);
   begin
     if (promise._state = 2) and (promise._deferreds.Count = 0) then
     begin
-      mainLoop.SetImmediate(
+      SetImmediate(
         procedure
         begin
           try
@@ -339,7 +339,7 @@ begin
      exit;
   doneLast := procedure(ignoredVal: IValue)
      begin
-        MainLoop.SetImmediate( onComplete );
+        SetImmediate( onComplete );
      end;
   then_(doneLast,doneLast);
 end;
@@ -358,7 +358,7 @@ begin
     exit;
   doneLast := procedure (val:IValue)
               begin
-                MainLoop.SetImmediate(
+                SetImmediate(
                 procedure
                 begin
                   onComplete(val);
