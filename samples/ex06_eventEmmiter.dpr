@@ -40,7 +40,7 @@ uses
       name.A := 'Jon';
       ee.emit(ev_MyName, @name);
 
-    except
+    finally
       ee.Free;
     end;
   end;
