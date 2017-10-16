@@ -21,6 +21,9 @@
         <Projects Include="samples\ex05_thread.dproj">
             <Dependencies>Node.pas.dproj</Dependencies>
         </Projects>
+        <Projects Include="samples\ex06_eventEmmiter.dproj">
+            <Dependencies>Node.pas.dproj</Dependencies>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -83,17 +86,32 @@
     <Target Name="ex05_thread:Make" DependsOnTargets="Node.pas:Make">
         <MSBuild Projects="samples\ex05_thread.dproj" Targets="Make"/>
     </Target>
+    <Target Name="ex06_eventEmmiter" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex06_eventEmmiter.dproj"/>
+    </Target>
+    <Target Name="ex06_eventEmmiter:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex06_eventEmmiter.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ex06_eventEmmiter:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex06_eventEmmiter.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="Node_pas;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread"/>
+        <CallTarget Targets="Node_pas;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread;ex06_eventEmmiter"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Node_pas:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean"/>
+        <CallTarget Targets="Node_pas:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean;ex06_eventEmmiter:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Node_pas:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make"/>
+        <CallTarget Targets="Node_pas:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make;ex06_eventEmmiter:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
     <ItemGroup Condition="'$(BuildGroup)'=='buildGrp'">
+        <BuildGroupProject Include="samples\ex06_eventEmmiter.dproj">
+            <ProjectGuid>{890FA4B4-3FF3-4224-B96C-225C3766A553}</ProjectGuid>
+            <Configurations>Debug</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
         <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
             <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
             <Configurations>Debug</Configurations>

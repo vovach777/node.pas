@@ -54,13 +54,15 @@ interface
        function add(p: TProc) : IQueueItem;
        constructor Create();
        function isEmpty: Boolean;
-       function execute : Boolean;
+       function emit : Boolean;
        destructor Destroy;override;
     end;
 
     IEventHandler = interface
     ['{2205ED21-A159-4085-8EF5-5C3715A4F6F4}']
        procedure remove;
+       function  GetID: integer;
+       property ID: integer read GetID;
     end;
 
     INPHandle = interface
@@ -170,12 +172,12 @@ interface
           property CWD : String read getCWD write setCWD;
       end;
 
-    TEventEmmiter = class
+    TEventEmitter = class
     private
     type
        PLinked = ^TLinked;
        TLinked = record
-         id : integer;
+         //id : integer;
          hasArg: Boolean;
          Item: IEventHandler;
          Next: PLinked;
@@ -190,13 +192,15 @@ interface
 //       id : integer;
 //       arguments : Pointer;
        constructor Create();
+       function on_(id: integer; p: TProc_APointer) : IEventHandler; overload; inline;
+       function on_(id: integer; p : Tproc) : IEventHandler; overload; inline;
        function add(id: integer; p : Tproc) : IEventHandler; overload;
        function once(id: integer; p : TProc) : IEventHandler; overload;
        function add(id: integer; p : TProc_APointer) : IEventHandler; overload;
        function once(id: integer; p : TProc_APointer) : IEventHandler; overload;
        procedure RemoveAll;
        function isEmpty: Boolean;
-       procedure execute(eventId: integer; eventArguments : Pointer = nil); overload;
+       procedure emit(eventId: integer; eventArguments : Pointer = nil); overload;
        destructor Destroy;override;
     end;
 
@@ -321,7 +325,7 @@ interface
 
 
 
-  TLoop = class(TEventEmmiter)
+  TLoop = class(TEventEmitter)
   public
     Fuvloop: puv_loop_t;
     //isDefault : Boolean;
@@ -424,6 +428,8 @@ interface
 const
   ev_loop_shutdown = 1;
   ev_loop_beforeTerminate = 2;
+threadvar
+  this_eventHandler: IEventHandler;
 
 implementation
 
@@ -443,11 +449,14 @@ type
 
     TEventHandler = class(TInterfacedObject, IEventHandler)
     private
-      procQueue: TEventEmmiter;
+      id : integer;
+      procQueue: TEventEmitter;
       proc: TProc;
       once: Boolean;
-      link: TEventEmmiter.PLinked;
+      link: TEventEmitter.PLinked;
+      function  GetID: integer;
       procedure remove;
+      Constructor Create(Aid : integer);
       destructor Destroy;override;
     end;
 
@@ -503,7 +512,7 @@ type
 
 { TBaseWorker }
 
-function TEventEmmiter._add(id: integer; p: TProc; once:Boolean; hasArg: Boolean) : IEventHandler;
+function TEventEmitter._add(id: integer; p: TProc; once:Boolean; hasArg: Boolean) : IEventHandler;
 var
   tmp : PLinked;
   qi : TEventHandler;
@@ -514,14 +523,14 @@ begin
      tmp := gc.Pop
   else
      new(tmp);
-  qi := TEventHandler.Create();
+  qi := TEventHandler.Create(id);
   qi.procQueue := self;
   qi.proc := p;
   qi.once := once;
   qi.link := tmp;
 
   result := qi;
-  tmp.id := id;
+//  tmp.id := id;
   tmp.hasArg := hasArg;
 
   tmp.Item := result;
@@ -543,7 +552,7 @@ begin
   //inc(count);
 end;
 
-procedure TEventEmmiter._remove(eh: IEventHandler);
+procedure TEventEmitter._remove(eh: IEventHandler);
 var
   qi: TEventHandler;
   link : PLinked;
@@ -576,23 +585,23 @@ begin
   end;
 end;
 
-function TEventEmmiter.add(id:integer; p: Tproc): IEventHandler;
+function TEventEmitter.add(id:integer; p: Tproc): IEventHandler;
 begin
   result := _add(id,p,false, false);
 end;
 
-function TEventEmmiter.add(id: integer; p: TProc_APointer): IEventHandler;
+function TEventEmitter.add(id: integer; p: TProc_APointer): IEventHandler;
 begin
   result := _add(id,TProc(p), false, true);
 end;
 
-constructor TEventEmmiter.Create();
+constructor TEventEmitter.Create();
 begin
   inherited Create;
   gc := TStack< PLinked >.Create;
 end;
 
-destructor TEventEmmiter.Destroy;
+destructor TEventEmitter.Destroy;
 begin
   while head <> nil do
   begin
@@ -605,45 +614,60 @@ begin
 end;
 
 
-procedure TEventEmmiter.execute(eventId: integer; eventArguments: Pointer=nil);
+procedure TEventEmitter.emit(eventId: integer; eventArguments: Pointer=nil);
 var
   tmp : PLinked;
   qi : TEventHandler;
+  bk : IEventHandler;
 begin
   tmp := head;
   while assigned(tmp) do
   begin
     qi := TEventHandler(tmp.Item);
-    if assigned(qi.proc) and (tmp.id = eventId) then
+    if assigned(qi.proc) and (qi.id = eventId) then
     begin
+      bk := this_eventHandler;
+      this_eventHandler := tmp.Item;
         if tmp.hasArg then
           TProc_APointer(qi.proc)(eventArguments)
         else
           qi.proc();
         if qi.once then
            _remove(qi);
+      this_eventHandler:=bk;
+      bk := nil;
     end;
     tmp := tmp.Next;
   end;
 
 end;
 
-function TEventEmmiter.isEmpty: Boolean;
+function TEventEmitter.isEmpty: Boolean;
 begin
    result := not assigned(head);
 end;
 
-function TEventEmmiter.once(id: integer; p: TProc_APointer): IEventHandler;
+function TEventEmitter.once(id: integer; p: TProc_APointer): IEventHandler;
 begin
   result := _add(id, TProc(p), true, true);
 end;
 
-function TEventEmmiter.once(id: integer; p: TProc): IEventHandler;
+function TEventEmitter.on_(id: integer; p: Tproc): IEventHandler;
+begin
+  result := add(id, p);
+end;
+
+function TEventEmitter.on_(id: integer; p: TProc_APointer): IEventHandler;
+begin
+  result := add(id,p);
+end;
+
+function TEventEmitter.once(id: integer; p: TProc): IEventHandler;
 begin
   result := _add(id, p,true, false);
 end;
 
-procedure TEventEmmiter.RemoveAll;
+procedure TEventEmitter.RemoveAll;
 var
   next, tmp : PLinked;
   qi : TEventHandler;
@@ -667,10 +691,20 @@ end;
 
 { TEventHandler }
 
+constructor TEventHandler.Create(Aid: integer);
+begin
+  id := Aid;
+end;
+
 destructor TEventHandler.Destroy;
 begin
 //  WriteLn('TEventHandler.Destroy');
   inherited;
+end;
+
+function TEventHandler.GetID: integer;
+begin
+  result := id;
 end;
 
 procedure TEventHandler.remove;
@@ -727,7 +761,7 @@ begin
   inherited;
 end;
 
-function TProcQueue.execute : Boolean;
+function TProcQueue.emit : Boolean;
 var
   tmp : PLinked;
 begin
@@ -811,10 +845,10 @@ begin
   embededTasks.setOnClose(
      procedure
      begin
-       execute(ev_loop_shutdown,self);
-       while nextTickQueue.execute do;
-       while checkQueue.execute do
-         while nextTickQueue.execute do;
+       emit(ev_loop_shutdown,self);
+       while nextTickQueue.emit do;
+       while checkQueue.emit do
+         while nextTickQueue.emit do;
 
      end);
 end;
@@ -902,12 +936,12 @@ begin
     check := SetCheck(
       procedure
       begin
-        checkQueue.execute;
+        checkQueue.emit;
       end);
     embededTasks.unref;
 //      setImmediate(mainProc);
     repeat
-      while nextTickQueue.execute do;
+      while nextTickQueue.emit do;
       if not checkQueue.isEmpty then
       begin
         check.ref;
@@ -957,7 +991,7 @@ procedure TLoop.terminate;
 begin
   if not isTerminated then
   begin
-    execute(ev_Loop_beforeTerminate);
+    emit(ev_Loop_beforeTerminate);
 
     uv_stop(uvloop); //break run_default loop to check isTerminated
     isTerminated := true;
