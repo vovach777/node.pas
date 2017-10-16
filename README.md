@@ -19,6 +19,7 @@ NodeJS-like ecosystem
 * tty
 * child process
 * Http(s) server
-* Promises (np.promise.pas)
-* Http(s) keep-alive client
+* Promises
 
+There is no documentaion et. 
+You can study examples for basical usage.
