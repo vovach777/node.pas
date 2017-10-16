@@ -3,7 +3,7 @@
         <ProjectGuid>{890FA4B4-3FF3-4224-B96C-225C3766A553}</ProjectGuid>
         <ProjectVersion>18.1</ProjectVersion>
         <FrameworkType>None</FrameworkType>
-        <MainSource>ex06_eventEmmiter.dpr</MainSource>
+        <MainSource>ex06_eventEmitter.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
@@ -51,7 +51,7 @@
         <DCC_K>false</DCC_K>
         <DCC_UsePackage>RESTComponents;emsclientfiredac;FireDACIBDriver;emsclient;FireDACCommon;RESTBackendComponents;soapserver;CloudService;FireDACCommonDriver;inet;FireDAC;FireDACSqliteDriver;soaprtl;soapmidas;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
-        <SanitizedProjectName>ex06_eventEmmiter</SanitizedProjectName>
+        <SanitizedProjectName>ex06_eventEmitter</SanitizedProjectName>
         <DCC_UnitSearchPath>..\..\node.pas\$(Platform)\$(Config);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
@@ -107,7 +107,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">ex06_eventEmmiter.dpr</Source>
+                    <Source Name="MainSource">ex06_eventEmitter.dpr</Source>
                 </Source>
             </Delphi.Personality>
             <Deployment Version="2">
@@ -126,9 +126,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\ex06_eventEmmiter.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\Win32\Debug\ex06_eventEmitter.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>ex06_eventEmmiter.exe</RemoteName>
+                        <RemoteName>ex06_eventEmitter.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

@@ -21,7 +21,7 @@
         <Projects Include="samples\ex05_thread.dproj">
             <Dependencies>Node.pas.dproj</Dependencies>
         </Projects>
-        <Projects Include="samples\ex06_eventEmmiter.dproj">
+        <Projects Include="samples\ex06_eventEmitter.dproj">
             <Dependencies>Node.pas.dproj</Dependencies>
         </Projects>
     </ItemGroup>
@@ -86,27 +86,27 @@
     <Target Name="ex05_thread:Make" DependsOnTargets="Node.pas:Make">
         <MSBuild Projects="samples\ex05_thread.dproj" Targets="Make"/>
     </Target>
-    <Target Name="ex06_eventEmmiter" DependsOnTargets="Node.pas">
-        <MSBuild Projects="samples\ex06_eventEmmiter.dproj"/>
+    <Target Name="ex06_eventEmitter" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex06_eventEmitter.dproj"/>
     </Target>
-    <Target Name="ex06_eventEmmiter:Clean" DependsOnTargets="Node.pas:Clean">
-        <MSBuild Projects="samples\ex06_eventEmmiter.dproj" Targets="Clean"/>
+    <Target Name="ex06_eventEmitter:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex06_eventEmitter.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="ex06_eventEmmiter:Make" DependsOnTargets="Node.pas:Make">
-        <MSBuild Projects="samples\ex06_eventEmmiter.dproj" Targets="Make"/>
+    <Target Name="ex06_eventEmitter:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex06_eventEmitter.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="Node_pas;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread;ex06_eventEmmiter"/>
+        <CallTarget Targets="Node_pas;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread;ex06_eventEmitter"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Node_pas:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean;ex06_eventEmmiter:Clean"/>
+        <CallTarget Targets="Node_pas:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean;ex06_eventEmitter:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Node_pas:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make;ex06_eventEmmiter:Make"/>
+        <CallTarget Targets="Node_pas:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make;ex06_eventEmitter:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
     <ItemGroup Condition="'$(BuildGroup)'=='buildGrp'">
-        <BuildGroupProject Include="samples\ex06_eventEmmiter.dproj">
+        <BuildGroupProject Include="samples\ex06_eventEmitter.dproj">
             <ProjectGuid>{890FA4B4-3FF3-4224-B96C-225C3766A553}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>

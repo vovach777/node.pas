@@ -1,4 +1,4 @@
-program ex06_eventEmmiter;
+program ex06_eventEmitter;
 
 {$APPTYPE CONSOLE}
 
@@ -8,18 +8,17 @@ uses
   System.SysUtils,
    np.core;
 
-  const ev_MyName = 1000;
-
-  procedure main;
+  const
+     ev_MyName = 1000;
   var
-    ee : TEventEmitter;
+    eventEmitter : TEventEmitter;
+
+  procedure sub;
+  var
     eh : IEventHandler;
-    name: TAString;
-    i : integer;
   begin
-    ee := TEventEmitter.Create;
-    try
-      ee.on_(ev_MyName,
+      //subscribe with args
+      eventEmitter.on_(ev_MyName,
         procedure(arg: Pointer)
         begin
           if assigned(arg) then
@@ -27,27 +26,36 @@ uses
           else
            WriteLn(Format('[%d] Anonymous!', [ this_eventHandler.id ] ));
         end);
-      eh := ee.on_(ev_MyName, procedure
+      eh := eventEmitter.on_(ev_MyName, procedure
                               begin
                                  WriteLn('Cancelled handler');
                               end);
-      ee.once(ev_MyName,
+      //subscribe no args. one time
+      eventEmitter.once(ev_MyName,
              procedure
              begin
                 WriteLn('MyName event emitted!');
              end);
-      eh.remove;
-      name.A := 'Jon';
-      ee.emit(ev_MyName, @name);
+      eh.remove; //cancel sub
+  end;
 
-    finally
-      ee.Free;
-    end;
+  procedure pub;
+  var
+    arguments: TAString;
+  begin
+    arguments.A := 'Jon';
+    eventEmitter.emit(ev_MyName, @arguments);
   end;
 
 begin
   try
-     main;
+     eventEmitter := TEventEmitter.Create;
+     try
+       sub;
+       pub;
+     finally
+       freeAndNil(eventEmitter);
+     end;
      readln;
   except
     on E: Exception do
