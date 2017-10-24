@@ -4,15 +4,6 @@ interface
   uses np.winsock, sysutils,Classes{TStringList}, np.libuv, generics.collections;
   type
     TProc_APointer = TProc<Pointer>;
-    PAString = ^TAString;
-    PAInt64  = ^TAInt64;
-
-    TAString = record
-      A : string;
-    end;
-    TAint64 = record
-       A : int64;
-    end;
 
 
     IQueueItem = interface
