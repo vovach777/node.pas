@@ -11,7 +11,7 @@ NodeJS-like ecosystem
 * loop
 * setImmediate
 * nextTick
-* EventEmmiter
+* EventEmitter
 * setTimeout
 * setInterval
 * tcp
