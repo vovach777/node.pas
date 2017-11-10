@@ -20,6 +20,7 @@ interface
       constructor Create(p: TProc);
       procedure Cancel;
       procedure Invoke;
+      destructor Destroy; override;
     end;
 
     IRWLock = Interface
@@ -185,9 +186,9 @@ interface
        constructor Create();
        function on_(id: integer; p: TProc_APointer) : IEventHandler; overload; inline;
        function on_(id: integer; p : Tproc) : IEventHandler; overload; inline;
-       function add(id: integer; p : Tproc) : IEventHandler; overload;
        function once(id: integer; p : TProc) : IEventHandler; overload;
-       function add(id: integer; p : TProc_APointer) : IEventHandler; overload;
+       function addEventHandler(id: integer; p : Tproc) : IEventHandler; overload;
+       function addEventHandler(id: integer; p : TProc_APointer) : IEventHandler; overload;
        function once(id: integer; p : TProc_APointer) : IEventHandler; overload;
        procedure RemoveAll;
        function isEmpty: Boolean;
@@ -240,6 +241,7 @@ interface
        FOnShutdown: TProc;
        FOnConnect : TProc;
        FConnect : Boolean;
+       FConnected: Boolean;
        FConnectReq: uv_connect_t;
        FConnectRef: INPStream;
        procedure _writecb(wd: PWriteData; status: integer);
@@ -576,12 +578,12 @@ begin
   end;
 end;
 
-function TEventEmitter.add(id:integer; p: Tproc): IEventHandler;
+function TEventEmitter.addEventHandler(id:integer; p: Tproc): IEventHandler;
 begin
   result := _add(id,p,false, false);
 end;
 
-function TEventEmitter.add(id: integer; p: TProc_APointer): IEventHandler;
+function TEventEmitter.addEventHandler(id: integer; p: TProc_APointer): IEventHandler;
 begin
   result := _add(id,TProc(p), false, true);
 end;
@@ -645,12 +647,12 @@ end;
 
 function TEventEmitter.on_(id: integer; p: Tproc): IEventHandler;
 begin
-  result := add(id, p);
+  result := addEventHandler(id, p);
 end;
 
 function TEventEmitter.on_(id: integer; p: TProc_APointer): IEventHandler;
 begin
-  result := add(id,p);
+  result := addEventHandler(id,p);
 end;
 
 function TEventEmitter.once(id: integer; p: TProc): IEventHandler;
@@ -729,6 +731,7 @@ begin
     end;
   //inc(count);
   lock.endWrite;
+  result := tmp.Item;
 end;
 
 constructor TProcQueue.Create;
@@ -798,6 +801,11 @@ end;
 constructor TQueueItem.Create(p: TProc);
 begin
   proc := p;
+end;
+
+destructor TQueueItem.Destroy;
+begin
+  inherited;
 end;
 
 procedure TQueueItem.Invoke;
@@ -929,7 +937,7 @@ begin
       begin
         checkQueue.emit;
       end);
-    embededTasks.unref;
+      check.unref;
 //      setImmediate(mainProc);
     repeat
       while nextTickQueue.emit do;
@@ -962,9 +970,8 @@ begin
   if assigned(checkQueue) and (assigned(p)) then
   begin
     result := checkQueue.add(p);
-    if uv_thread_equal(@uv_thread_self, @loopThread) = 0 then
+    if uv_thread_self <> loopThread then
        embededTasks.send;
-
   end;
 end;
 
@@ -1087,7 +1094,7 @@ end;
 constructor TNPCheck.Create(ACallBack: TProc);
 begin
     inherited Create(UV_CHECK, ACallBack);
-    uv_check_init(loop.uvloop , puv_check_t( Fhandle) );
+    duv_ok(uv_check_init(loop.uvloop , puv_check_t( Fhandle) ));
     duv_ok(uv_check_start(puv_check_t(Fhandle), @__cb));
     FActiveRef := self;
 end;
@@ -1349,6 +1356,7 @@ begin
   assert(assigned(ud));
   if status = 0 then
   begin
+    ud.FConnected := true;
     if assigned(ud.FOnConnect) then
     try
        ud.FOnConnect();
@@ -1358,7 +1366,7 @@ begin
   end
   else
     ud.__onError(status);
-  ud._Release;
+  ud.FConnectRef := nil;
 end;
 
 
@@ -1604,16 +1612,21 @@ end;
 
 procedure TNPStream.shutdown(ACallBack:TProc);
 begin
-  if not FShutdown then
+  if not is_closing and  not FError and not FShutdown  then
   begin
-    FShutdown := true;
-    FOnShutdown := ACallBack;
-    uv_set_user_data(@FShutdownReq,self);
-    try
-       duv_ok( uv_shutdown(@FShutdownReq,FStream,@__shutdown_cb) );
-       FShutdownRef := self;
-    except
-       Clear;
+      if not FConnected then
+         Clear
+    else
+    begin
+      try
+        FOnShutdown := ACallBack;
+        uv_set_user_data(@FShutdownReq,self);
+        duv_ok( uv_shutdown(@FShutdownReq,FStream,@__shutdown_cb) );
+        FShutdown := true;
+        FShutdownRef := self;
+      except
+        Clear;
+      end;
     end;
   end;
 end;

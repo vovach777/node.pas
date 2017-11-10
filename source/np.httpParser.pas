@@ -124,7 +124,7 @@ begin
        inc(lcount);
   end;
   FKeys.Add(newKey);
-  Add(newKey,Value);
+  Add(newKey,StrRemoveQuote(Value));
 end;
 
 procedure THTTPHeader.Clear;
@@ -200,8 +200,7 @@ begin
                continue;
             SetLength(kv,2);
             kv[0] := LowerCase(trim(kv[0]));
-            kv[1] := StrRemoveQuote( trim(kv[1]) );
-            addField(pair.Key+'.'+kv[0],kv[1]);
+            addField(pair.Key+'.'+kv[0],trim(kv[1]));
          end;
      end;
      break;
