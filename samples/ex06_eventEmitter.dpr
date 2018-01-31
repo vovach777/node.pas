@@ -94,36 +94,6 @@ uses
     eventEmitter.emit(ev_card, @card);
   end;
 
-  procedure bench;
-  var
-     i,j : integer;
-     sw: TStopwatch;
-     eventEmitter : TEventEmitter;
-  begin
-    eventEmitter := TEventEmitter.Create;
-    repeat
-    sw := TStopwatch.StartNew;
-    j := 0;
-      eventEmitter.once(1,
-           procedure
-           begin
-             inc(j);
-           end);
-      sw.Stop;
-//      Write(#13,'                         ',#13);
-      Write ( sw.ElapsedMilliseconds, ' ms ',j );
-      sw := sw.StartNew;
-      eventEmitter.emit(1);
-      sw.Stop;
-//      Write (' ', sw.ElapsedMilliseconds, ' ms ',j );
-      sw := sw.StartNew;
-      eventEmitter.emit(1);
-      sw.Stop;
-//      Write(' ', sw.ElapsedMilliseconds, ' ms' );
-     until false;
-
-  end;
-
 begin
   try
      eventEmitter := TEventEmitter.Create;
@@ -134,18 +104,6 @@ begin
      finally
        freeAndNil(eventEmitter);
      end;
-
-      SetPriorityClass(GetCurrentProcess,THREAD_PRIORITY_HIGHEST);
-      TParallel.For(1,TThread.ProcessorCount,
-                procedure(cpu: integer)
-                begin
-
-                  SetThreadAffinityMask(GetCurrentThread,1 shl (cpu-1));
-                  SetThreadPriority(GetCurrentThread,15);
-                  SetThreadPriorityBoost(GetCurrentThread,true);
-
-                  bench;
-                end);
      readln;
   except
     on E: Exception do

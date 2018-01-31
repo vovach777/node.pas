@@ -17,11 +17,11 @@ begin
         begin
           stdout.PrintLn(#27'[1;32m'+TOSVersion.ToString+#27'[m');
           stdout.PrintLn('type `exit`');
-          stdIn.setOnData(procedure(data:PByte; dataLen: Cardinal)
+          stdIn.setOnData(procedure(data:PBufferRef)
                           var
                             s : string;
                           begin
-                            s := trim(Buffer.Create(data,datalen).AsString(65001));
+                            s := trim( data.AsUtf8String );
                             stdout.PrintLn(#27'[1;33m'+s+#27'[m');
                             if SameText(s,'exit') then
                                loop.terminate;
