@@ -21,6 +21,7 @@ const
  type
    TUnixTime = type int64;
   function FmtTimestamp(Date: TDateTime): String;
+  function FmtTimestampISO(Date: TDateTime): String;
   function StringPrefixIs(const prefix, str : string) : Boolean;
   function StringPostfixIs(const postfix, str : string) : Boolean;
   function StrToHex(const s: RawByteString): UTF8String;
@@ -114,6 +115,17 @@ begin
        Result := '(invalid)';
   end;
 end;
+
+function FmtTimestampISO(Date: TDateTime): String;
+begin
+  try
+    Result := FormatDateTime('yyyy-mm-dd hh:nn:ss', Date);
+  except
+    On E:Exception do
+       Result := '(invalid)';
+  end;
+end;
+
 
 function StringPrefixIs(const prefix, str : string) : Boolean;
 var

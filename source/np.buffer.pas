@@ -4,6 +4,7 @@ interface
   uses sysUtils, np.ut,classes;
 
   type
+     PBufferRef = ^BufferRef;
      BufferRef = record
      private
         __ref__ : TBytes;

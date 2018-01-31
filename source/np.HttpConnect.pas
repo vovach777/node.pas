@@ -1,4 +1,4 @@
-unit uHttpConnect; {experimental}
+unit np.HttpConnect;
 
 interface
  uses np.core, np.httpParser, Generics.Collections, sysUtils,
@@ -38,6 +38,7 @@ interface
        ResponseHeader: THTTPHeader;
        ResponseContent: BufferRef;
        connect: THttpConnect;
+       ConnectionOwner: Boolean;
        ReqMethod : string;
        ReqPath:   string;
 //       CompleteReaction: TCompleteReaction;
@@ -53,6 +54,7 @@ interface
        destructor Destroy; override;
        procedure resume; //reuse request object again
        procedure done;   //request do not need anymore (default before ev_complete)
+       procedure autoDone;
     end;
 
     THttpConnect = class(TEventEmitter)
@@ -143,6 +145,15 @@ begin
     req.Append(name).Append(': ').Append(value).Append(#13).Append(#10);
 end;
 
+procedure TBaseHttpRequest.autoDone;
+begin
+  once(ev_Complete,
+        procedure
+        begin
+           done;
+        end);
+end;
+
 procedure TBaseHttpRequest.beginCookie;
 begin
   assert( fCookieCount = 0 );
@@ -153,15 +164,16 @@ begin
   ClearResponse;
   assert(assigned(connect));
   ReqMethod := method;
-  ReqPath  := path;
   initState := isWantEndHeader;
   isGet := method = 'GET';
   req.Clear;
   req.Append(method).Append(' ');
   if path = '' then
-     req.Append('/')
+     ReqPath  := '/'
   else
-     req.Append(TNetEncoding.URL.Encode( path ));
+     ReqPath := TNetEncoding.URL.Encode( path );
+
+  req.Append(ReqPath);
   req.Append(' HTTP/1.1').Append(#13).Append(#10);
 
   addHeader('Host', connect.Url.HttpHost);
@@ -205,8 +217,8 @@ begin
   lostConnectObjectHandler.remove;
   FreeAndNil(req);
   FreeAndNil(ResponseHeader);
-  inherited;
   emit(ev_destroy);
+  inherited;
 end;
 
 
@@ -313,6 +325,12 @@ begin
     req.emit(ev_HeaderLoaded, req);
     Fdata.length := 0;
   end;
+  if req.ConnectionOwner then
+  begin
+    if req.ResponseContent.length > 0 then
+      req.emit(ev_ContentUpdated, @req.ResponseContent);
+  end
+  else
   if req.ResponseContent.length >= req.ResponseHeader.ContentLength then
   begin
      req.ResponseContent.length := req.ResponseHeader.ContentLength;
@@ -451,21 +469,26 @@ begin
         begin
           delay := not IsConnected or closeBadly;
           InternalClose;
-          if delay then
-          begin
-             onTimeout := SetTimeout(
-                 procedure
-                 begin
-                   onTimeout := nil;
-                   CheckConnect;
-                 end, 100);
-             onTimeout.unref;
-          end
+          if (queue.Count > 0) and (queue.Peek.ConnectionOwner) then
+             Shutdown
           else
-            CheckConnect;
+          begin
+            if delay then
+            begin
+               onTimeout := SetTimeout(
+                   procedure
+                   begin
+                     onTimeout := nil;
+                     CheckConnect;
+                   end, 100);
+               onTimeout.unref;
+            end
+            else
+              CheckConnect;
+          end;
         end);
     con.setOnError(
-        procedure (err:Integer)
+        procedure (err:PNPError)
         begin
           closeBadly := true;
           emit(ev_error, @err);
@@ -491,9 +514,9 @@ begin
             SSL_set_bio(FSSL, Fin_bio, Fout_bio);
             setLength( FSSLData, 4096);
             con.setOnData(
-              procedure (data: PByte; Len:Cardinal)
+              procedure (data:PBufferRef)
               begin
-                onSSLData(BufferRef.CreateWeakRef(data,len));
+                onSSLData(data^);
               end);
             do_handshake;
         end);
@@ -504,9 +527,9 @@ begin
           procedure
           begin
             con.setOnData(
-            procedure (data:PByte;Len:Cardinal)
+            procedure (data:PBufferRef)
             begin
-              onPlainData(BufferRef.CreateWeakRef(data,len));
+              onPlainData(data^);
             end);
             IsConnected := true;
             emit(ev_connected,self);
@@ -563,12 +586,12 @@ begin
           nbytes := BIO_read(Fout_bio, @FSSLData[0] , length(FSSLData));
           if nbytes <= 0 then
             break;
-          con.write(@FSSLData[0], nbytes);
+          con.write(BufferRef.CreateWeakRef( @FSSLData[0], nbytes) );
         until false;
       end
       else
       begin
-        con.write( req.request.ref, req.request.length );
+        con.write( req.request );
         ///req.request := Buffer.Null;
       end;
       exit;
@@ -636,7 +659,7 @@ begin
     nbytes := BIO_read(Fout_bio,@FSSLData[0],length(FSSLData));
     if nbytes <= 0 then
       break;
-    con.write(@FSSLData[0],nbytes);
+    con.write(BufferRef.CreateWeakRef( @FSSLData[0],nbytes) );
   until false;
 end;
 
@@ -660,7 +683,7 @@ begin
          begin
            break;
          end;
-         con.write(@FSSLData[0],len);
+         con.write(BufferRef.CreateWeakRef( @FSSLData[0],len) );
        until false;
        con.setOnData(nil);
        con.shutdown(nil);

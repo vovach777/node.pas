@@ -20,6 +20,8 @@ NodeJS-like ecosystem
 * child process
 * Http(s) server
 * Promises
+* JSON
+* Http(c) client
 
 There is no documentaion et. 
 You can study examples for basical usage.

@@ -35,12 +35,9 @@ begin
           spawn.stdio[1].stream := puv_stream_t( cp_stdout._uv_handle );
           spawn.spawn;
           cp_stdout.setOnData(
-               procedure (data:PByte; len : Cardinal)
-               var
-                 s : UTF8String;
+               procedure (data:PBufferRef)
                begin
-                 SetString(s,PUTF8Char(data),len);
-                 stdout.Print(s);
+                 stdout.Print(data.AsUtf8String );
                end
            );
         end

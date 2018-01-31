@@ -198,30 +198,32 @@ begin
   if assigned(Actx) then
   begin
     setOnData(
-      procedure (data: PByte; Len:Cardinal)
+      procedure (data_: PBufferRef)
       var
         nbytes : integer;
+        data : BufferRef;
       begin
+       data := data_^;
        try
-        repeat
-        nbytes := BIO_write(Fin_bio,data,len);
-        assert( nbytes > 0);
-        inc(data, nbytes);
-        dec(len,  nbytes);
-        do_handshake;
-        if Fis_init_finished = 1 then
+        while data.length > 0 do
         begin
-//          if FState = psFin then
-//            exit;
-          repeat
-            nbytes := SSL_read(FSSL,@FSSLData[0],length(FSSLData));
-            if nbytes <= 0 then
-              break;
-            optimized_append(FBuf, BufferRef.CreateWeakRef(@FSSLData[0],nbytes));
-          until false;
-          processBuf;
+          nbytes := BIO_write(Fin_bio,data.ref,data.length);
+          assert( nbytes > 0);
+          data.TrimL(nbytes);
+          do_handshake;
+          if Fis_init_finished = 1 then
+          begin
+  //          if FState = psFin then
+  //            exit;
+            repeat
+              nbytes := SSL_read(FSSL,@FSSLData[0],length(FSSLData));
+              if nbytes <= 0 then
+                break;
+              optimized_append(FBuf, BufferRef.CreateWeakRef(@FSSLData[0],nbytes));
+            until false;
+            processBuf;
+          end;
         end;
-        until len = 0;
         except
           Clear;
         end;
@@ -230,9 +232,9 @@ begin
   else
   begin
     setOnData(
-      procedure (data: PByte; Len:Cardinal)
+      procedure (data: PBufferRef)
       begin
-        optimized_append(FBuf, BufferRef.CreateWeakRef(data,Len));
+        optimized_append(FBuf, data^);
         processBuf;
       end);
 
@@ -291,7 +293,7 @@ begin
     nbytes := BIO_read(Fout_bio,@FSSLData[0],length(FSSLData));
     if nbytes <= 0 then
       break;
-    write(@FSSLData[0],nbytes);
+    write(BufferRef.CreateWeakRef( @FSSLData[0],nbytes) );
   until false;
 
 end;
@@ -312,7 +314,7 @@ begin
        begin
          break;
        end;
-       write(@FSSLData[0],len);
+       write(BufferRef.CreateWeakRef( @FSSLData[0],len) );
      until false;
   end;
   setOnData(nil);
@@ -342,12 +344,12 @@ begin
         len := BIO_read(Fout_bio,buf.ref,buf.length);
         if len <= 0 then
           break;
-        write(buf.ref, len);
+        write(buf.slice(0,len));
       until false;
     end
     else
     begin
-      write( FResponse.buf.ref, FResponse.buf.length );
+      write( FResponse.buf );
       FResponse.buf.length := 0; //reset
     end;
     if not FKeepAlive then

@@ -19,6 +19,7 @@ Interface
        FPort: word;
        FParams: TNameValues;
        FPath : String;
+       FfullPath : String;
     function GetPort: word;
     public
        procedure Parse(const AURL: BufferRef); overload;
@@ -31,6 +32,7 @@ Interface
        property Host : string read FHost;
        property Port: word read GetPort;
        property Path: string read FPath;
+       property FullPath: string read FFullPath;
        property Params: TNameValues read FParams;
     end;
 
@@ -85,6 +87,7 @@ begin
     ord('?'),0:
       begin
         path := url.slice(0,i);
+        FfullPath := DecodeURL(url.AsString(CP_USASCII));
         url.TrimL(i);
         I := 0;
         break;
@@ -215,7 +218,7 @@ begin
      exit(443);
   if SameText(FSchema,'rtsp')  then
      exit(554);
-  raise EURL.Create('Error Message');
+  raise EURL.Create('Uknown Schema');
 end;
 
 function TURL.HttpHost: string;

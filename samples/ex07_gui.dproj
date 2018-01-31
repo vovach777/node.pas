@@ -1,14 +1,14 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
-        <ProjectGuid>{F59BF2CF-9E51-45F7-A6BF-E3B14A385524}</ProjectGuid>
+        <ProjectGuid>{47C585D2-383D-4C12-9A29-FC0A3AC05879}</ProjectGuid>
         <ProjectVersion>18.1</ProjectVersion>
-        <FrameworkType>None</FrameworkType>
-        <MainSource>ex07_sock5.dpr</MainSource>
+        <FrameworkType>VCL</FrameworkType>
+        <MainSource>ex07_gui.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
-        <AppType>Console</AppType>
+        <AppType>Application</AppType>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -39,30 +39,31 @@
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+        <Cfg_2_Win32>true</Cfg_2_Win32>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1049</VerInfo_Locale>
         <DCC_DcuOutput>..\..\node.pas\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>..\..\node.pas\$(Platform)\$(Config)</DCC_ExeOutput>
-        <DCC_E>false</DCC_E>
-        <DCC_N>false</DCC_N>
-        <DCC_S>false</DCC_S>
-        <DCC_F>false</DCC_F>
-        <DCC_K>false</DCC_K>
         <DCC_UsePackage>RESTComponents;emsclientfiredac;FireDACIBDriver;emsclient;FireDACCommon;RESTBackendComponents;soapserver;CloudService;FireDACCommonDriver;inet;FireDAC;FireDACSqliteDriver;soaprtl;soapmidas;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
-        <SanitizedProjectName>ex07_sock5</SanitizedProjectName>
+        <SanitizedProjectName>ex01_LoopTTY</SanitizedProjectName>
         <DCC_UnitSearchPath>..\..\node.pas\$(Platform)\$(Config);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <DCC_ConsoleTarget>true</DCC_ConsoleTarget>
+        <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
+        <DCC_UsePackage>DBXSqliteDriver;bindcompdbx;DBXDb2Driver;DBXInterBaseDriver;vcl;DBXSybaseASEDriver;vclactnband;IndyIPCommon;IndyIPServer;IndySystem;tethering;svnui;dsnapcon;DBXMSSQLDriver;vclimg;DatasnapConnectorsFreePascal;TeeDB;vcltouch;vcldb;Intraweb;svn;DBXOracleDriver;ibmonitor;inetdb;DBXOdbcDriver;DbxCommonDriver;ibxpress;Tee;DataSnapServer;xmlrtl;DataSnapNativeClient;ibxbindings;vclib;vclwinx;rtl;DbxClientDriver;DBXSybaseASADriver;CustomIPTransport;dbexpress;vcldsnap;IndyCore;vclx;bindcomp;appanalytics;DataSnapCommon;DBXInformixDriver;dsnap;IndyIPClient;bindcompvcl;DataSnapConnectors;TeeUI;VCLRESTComponents;vclribbon;dbxcds;VclSmp;adortl;DataSnapIndy10ServerTransport;vclie;bindengine;DBXMySQLDriver;DataSnapProviderClient;dsnapxml;DBXFirebirdDriver;dbrtl;IndyProtocols;inetdbxpress;DataSnapClient;DataSnapServerMidas;$(DCC_UsePackage)</DCC_UsePackage>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <DCC_UsePackage>DBXSqliteDriver;bindcompdbx;DBXDb2Driver;DBXInterBaseDriver;vcl;DBXSybaseASEDriver;vclactnband;IndyIPCommon;IndyIPServer;IndySystem;tethering;svnui;dsnapcon;DBXMSSQLDriver;vclimg;DatasnapConnectorsFreePascal;TeeDB;vcltouch;vcldb;Intraweb;svn;DBXOracleDriver;ibmonitor;inetdb;DBXOdbcDriver;DbxCommonDriver;ibxpress;Tee;DataSnapServer;xmlrtl;DataSnapNativeClient;ibxbindings;vclib;vclwinx;rtl;DbxClientDriver;DBXSybaseASADriver;CustomIPTransport;dbexpress;vcldsnap;IndyCore;vclx;bindcomp;appanalytics;DataSnapCommon;DBXInformixDriver;dsnap;IndyIPClient;bindcompvcl;zkemkeeperLib;DataSnapConnectors;TeeUI;VCLRESTComponents;vclribbon;dbxcds;VclSmp;adortl;DataSnapIndy10ServerTransport;vclie;bindengine;DBXMySQLDriver;DataSnapProviderClient;dsnapxml;DBXFirebirdDriver;dbrtl;IndyProtocols;inetdbxpress;DataSnapClient;DataSnapServerMidas;$(DCC_UsePackage)</DCC_UsePackage>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
-        <DCC_ConsoleTarget>true</DCC_ConsoleTarget>
         <DCC_UsePackage>DBXSqliteDriver;bindcompdbx;DBXDb2Driver;DBXInterBaseDriver;vcl;DBXSybaseASEDriver;vclactnband;IndyIPCommon;IndyIPServer;IndySystem;tethering;dsnapcon;DBXMSSQLDriver;vclimg;DatasnapConnectorsFreePascal;TeeDB;vcltouch;vcldb;Intraweb;DBXOracleDriver;ibmonitor;inetdb;DBXOdbcDriver;DbxCommonDriver;ibxpress;Tee;DataSnapServer;xmlrtl;DataSnapNativeClient;ibxbindings;vclib;vclwinx;rtl;DbxClientDriver;DBXSybaseASADriver;CustomIPTransport;dbexpress;vcldsnap;IndyCore;vclx;bindcomp;appanalytics;DataSnapCommon;DBXInformixDriver;dsnap;IndyIPClient;bindcompvcl;DataSnapConnectors;TeeUI;VCLRESTComponents;vclribbon;dbxcds;VclSmp;adortl;DataSnapIndy10ServerTransport;vclie;bindengine;DBXMySQLDriver;DataSnapProviderClient;dsnapxml;DBXFirebirdDriver;dbrtl;IndyProtocols;inetdbxpress;DataSnapClient;DataSnapServerMidas;$(DCC_UsePackage)</DCC_UsePackage>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
@@ -74,6 +75,8 @@
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <AppEnableHighDPI>true</AppEnableHighDPI>
+        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -82,11 +85,18 @@
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_DebugInformation>0</DCC_DebugInformation>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <AppEnableHighDPI>true</AppEnableHighDPI>
+        <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
+    </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="sock5client.pas"/>
+        <DCCReference Include="ex07_mainForm.pas">
+            <Form>Form1</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -105,37 +115,37 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">ex07_sock5.dpr</Source>
+                    <Source Name="MainSource">ex07_gui.dpr</Source>
                 </Source>
             </Delphi.Personality>
             <Deployment Version="2">
-                <DeployFile LocalName="$(BDS)\Redist\osx32\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="OSX32">
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="$(BDS)\Redist\iossimulator\libPCRE.dylib" Class="DependencyModule">
-                    <Platform Name="iOSSimulator">
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="..\Win32\Debug\ex07_sock5.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Win32\Debug\ex07_gui.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>ex07_sock5.exe</RemoteName>
+                        <RemoteName>ex07_gui.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployClass Name="ProjectiOSDeviceResourceRules">
+                <DeployClass Name="DependencyModule">
+                    <Platform Name="Win32">
+                        <Operation>0</Operation>
+                        <Extensions>.dll;.bpl</Extensions>
+                    </Platform>
                     <Platform Name="iOSDevice64">
                         <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
+                    </Platform>
+                    <Platform Name="OSX32">
+                        <RemoteDir>Contents\MacOS</RemoteDir>
+                        <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
                     </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
+                    </Platform>
+                    <Platform Name="iOSSimulator">
+                        <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
                     </Platform>
                 </DeployClass>
                 <DeployClass Name="ProjectOSXResource">
@@ -489,27 +499,12 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <DeployClass Name="DependencyModule">
-                    <Platform Name="Win32">
-                        <Operation>0</Operation>
-                        <Extensions>.dll;.bpl</Extensions>
-                    </Platform>
+                <DeployClass Name="ProjectiOSDeviceResourceRules">
                     <Platform Name="iOSDevice64">
                         <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
-                    </Platform>
-                    <Platform Name="OSX32">
-                        <RemoteDir>Contents\MacOS</RemoteDir>
-                        <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
                     </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
                     </Platform>
                 </DeployClass>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>

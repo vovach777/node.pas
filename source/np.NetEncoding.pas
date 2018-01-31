@@ -767,7 +767,7 @@ function TURLEncoding.DoEncode(const Input: string): string;
 const
   NoConversion = [Ord('A')..Ord('Z'), Ord('a')..Ord('z'), Ord('*'), Ord('@'),
                   Ord('.'), Ord('_'), Ord('-'), Ord('0')..Ord('9'), Ord('$'),
-                  Ord('!'), Ord(''''), Ord('('), Ord(')'),ord('/'),ord('='),ord('&'),ord('?')];
+                  Ord('!'), Ord(''''), Ord('('), Ord(')'),ord('/'),ord('='),ord('&'),ord('?'),ord(':')];
 
   procedure AppendByte(B: Byte; var Buffer: PChar);
   const
@@ -802,12 +802,12 @@ begin
       Rp^ := Sp^;
       Inc(Rp)
     end
-    else if Sp^ = ' ' then
+    else {if Sp^ = ' ' then
     begin
       Rp^ := '+';
       Inc(Rp)
     end
-    else
+    else}
     begin
       if (Ord(Sp^) < 128) then
         // Single byte char

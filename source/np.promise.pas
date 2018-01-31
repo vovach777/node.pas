@@ -49,7 +49,7 @@ interface
     PRef = ^T;
   var
     FRecordValue: T;
-    constructor Create(const AtypeName: string = '');
+    constructor Create(const RecValue: T; const AtypeName: string = '');
     function Ref : PRef;
   end;
 
@@ -297,7 +297,7 @@ constructor Tpromise.Create(const fn: TPromiseFunction);
         if done then
           exit;
         done := true;
-        reject(promise, TValue<string>.Create(E.Message));
+        reject(promise, TValue<string>.Create(E.Message,'reject'));
       end;
     end;
   end;
@@ -392,13 +392,12 @@ end;
 
   constructor TValue<T>.Create(AValue: T; const ATypeName : string);
   begin
+     inherited Create;
      Value := AValue;
      if ATypeName <> '' then
        _typeName := ATypeName
      else
         _typeName := ClassName;
-
-     inherited Create;
   end;
 
 function TValue<T>.RTTI: TValue;
@@ -457,8 +456,9 @@ function newPromise(const fn:TPromiseFunction) : IPromise;
 
 { TRecordValue<T> }
 
-constructor TRecordValue<T>.Create(const AtypeName: string);
+constructor TRecordValue<T>.Create(const RecValue: T; const AtypeName: string);
 begin
+  FRecordValue := RecValue;
   inherited Create(@FRecordValue,ATypeName);
 end;
 

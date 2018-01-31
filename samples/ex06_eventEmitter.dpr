@@ -5,13 +5,18 @@ program ex06_eventEmitter;
 {$R *.res}
 
 uses
+  windows,
   System.SysUtils,
-   np.core;
+   np.core,
+   System.Diagnostics,
+   System.Threading,
+   System.Classes;
 
   const
      ev_Name = 1000;
      ev_PhoneNo = 1001;
      ev_card = 1002;
+     ev_minus = 2000;
   type
      PCardArgument = ^TCardArgument;
      TCardArgument = record
@@ -26,37 +31,56 @@ uses
   var
     eh : IEventHandler;
     p  : TProc;
+    i : integer;
   begin
       eventEmitter.on_(ev_Name,
         procedure(arg: Pointer)
         begin
           if assigned(arg) then
-           WriteLn(Format('[%d] Name is %s!', [ this_eventHandler.id, PString(arg)^ ] ))
+           WriteLn(Format('[%d] Name is %s!', [ ev_Name, PString(arg)^ ] ))
           else
-           WriteLn(Format('[%d] Anonymous!', [ this_eventHandler.id ] ));
+           WriteLn(Format('[%d] Anonymous!', [ ev_Name ] ));
+           eventEmitter.emit(ev_Minus);
         end);
       eh := eventEmitter.on_(ev_Name, procedure
                               begin
                                  WriteLn('Cancelled handler');
+                                 eventEmitter.emit(ev_minus);
                               end);
       eh.remove; //cancel sub
       eventEmitter.on_(ev_PhoneNo, procedure(phone_arg: Pointer)
                                    begin
-                                     WriteLn(Format('[%d] PhoneNo: %d',[this_eventHandler.id, PInt64(phone_arg)^]));
+                                     WriteLn(Format('[%d] PhoneNo: %d',[ev_PhoneNo, PInt64(phone_arg)^]));
+                                     eventEmitter.emit(ev_minus);
                                    end);
       eventEmitter.on_(ev_card, procedure(cardArg: Pointer)
                                 begin
                                   assert(assigned(cardArg));
                                   with PCardArgument(cardArg)^ do
                                      WriteLn(Format('Name: %s, tel.: %d', [name, phoneNo] ));
+                                  eventEmitter.emit(ev_minus);
                                 end);
-      p :=   procedure
-             begin
-                WriteLn('----------------------------------');
-             end;
-      eventEmitter.on_(ev_Name,p);
-      eventEmitter.on_(ev_PhoneNo,p);
-      eventEmitter.on_(ev_card,p);
+//      p :=   procedure
+//             begin
+//                eventEmitter.emit(ev_minus);
+//             end;
+//      eventEmitter.on_(ev_Name,p);
+//      eventEmitter.on_(ev_PhoneNo,p);
+//      eventEmitter.on_(ev_card,p);
+      for i := 1 to 24 do
+      eventEmitter.on_(
+         ev_minus,
+         procedure
+         begin
+           write('-');
+         end);
+      eventEmitter.on_(
+         ev_minus,
+           procedure
+           begin
+              WriteLn;
+           end);
+
   end;
 
   procedure pub;
@@ -70,15 +94,58 @@ uses
     eventEmitter.emit(ev_card, @card);
   end;
 
+  procedure bench;
+  var
+     i,j : integer;
+     sw: TStopwatch;
+     eventEmitter : TEventEmitter;
+  begin
+    eventEmitter := TEventEmitter.Create;
+    repeat
+    sw := TStopwatch.StartNew;
+    j := 0;
+      eventEmitter.once(1,
+           procedure
+           begin
+             inc(j);
+           end);
+      sw.Stop;
+//      Write(#13,'                         ',#13);
+      Write ( sw.ElapsedMilliseconds, ' ms ',j );
+      sw := sw.StartNew;
+      eventEmitter.emit(1);
+      sw.Stop;
+//      Write (' ', sw.ElapsedMilliseconds, ' ms ',j );
+      sw := sw.StartNew;
+      eventEmitter.emit(1);
+      sw.Stop;
+//      Write(' ', sw.ElapsedMilliseconds, ' ms' );
+     until false;
+
+  end;
+
 begin
   try
      eventEmitter := TEventEmitter.Create;
      try
        sub;
        pub;
+       eventEmitter.RemoveAll;
      finally
        freeAndNil(eventEmitter);
      end;
+
+      SetPriorityClass(GetCurrentProcess,THREAD_PRIORITY_HIGHEST);
+      TParallel.For(1,TThread.ProcessorCount,
+                procedure(cpu: integer)
+                begin
+
+                  SetThreadAffinityMask(GetCurrentThread,1 shl (cpu-1));
+                  SetThreadPriority(GetCurrentThread,15);
+                  SetThreadPriorityBoost(GetCurrentThread,true);
+
+                  bench;
+                end);
      readln;
   except
     on E: Exception do

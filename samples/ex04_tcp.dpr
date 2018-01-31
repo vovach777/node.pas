@@ -7,7 +7,8 @@ program ex04_tcp;
 uses
   System.SysUtils,
   np.Core,
-  np.libuv;
+  np.libuv,
+  np.buffer;
 
 begin
   try
@@ -31,9 +32,9 @@ begin
                     client.set_nodelay(true);
                     stdout.PrintLn('Client connected');
                     client.setOnData(
-                        procedure (data:PByte; len : Cardinal)
+                        procedure (data:PBufferRef)
                         begin
-                          client.write(data,len);
+                          client.write(data^);
                         end
                     );
                     client.setOnClose(
@@ -52,52 +53,41 @@ begin
           connect.setOnConnect(
               procedure
               var
-                 LData : int64;
-                 RcvBuf: int64;
-                 BufLen : integer;
-                 Buf: PByte;
+                OutBuf : BufferRef;
+                InputBuf: BufferRef;
               begin
-                LData := 0;
-                BufLen := sizeof(int64);
-                Buf := @RcvBuf;
-                connect.write(PByte(@LData),sizeof(LData));
-                  connect.setOnData(
-                        procedure (data: PByte; Len : Cardinal)
-                        var
-                          len2: Cardinal;
-                        begin
-                            while len > 0 do
-                            begin
-                              if len > BufLen then
-                                 len2 := BufLen
-                              else
-                                 len2 := len;
-                              dec(len,len2);
-                              move(data^,Buf^,len2);
-                              dec(BufLen,len2);
-                              if BufLen = 0 then
-                              begin
-                                BufLen := sizeof(int64);
-                                Buf := @RcvBuf;
-                                assert(RcvBuf = Ldata); //check echo data
-                                inc(LData);
-                                if LData and $FFF = 0 then
-                                begin
-                                   stdout.Print(#27'[2K'#13+IntToStr(Ldata*100 div $10000)+'%' );
-                                end;
+                OutBuf := Buffer.Create(8);
+                OutBuf.write_as<int64>(0,1);
+                InputBuf := Buffer.Null;
 
-                                if LData < $10000 then
-                                  connect.write(PByte(@LData),sizeof(LData))
-                                else
-                                begin
-                                  stdout.PrintLn('');
-                                  connect.shutdown();
-                                end;
+                connect.write(OutBuf);
+                  connect.setOnData(
+                        procedure (data:PBufferRef)
+                        var
+                          data64: int64;
+                        begin
+                            InputBuf := Buffer.Create( [InputBuf, data^] );
+                            while InputBuf.HasSize(8) do
+                            begin
+                              data64 := InputBuf.unpack<int64>;
+                              InputBuf.TrimL(8);
+                              if data64 and $FFF = 0 then
+                              begin
+                                stdout.Print(#27'[2K'#13+IntToStr(data64*100 div $10000)+'%' );
+                              end;
+                              if data64 <= $10000 then
+                              begin
+                                inc(data64);
+                                connect.write(BufferRef.Pack<int64>(data64));
+                              end
+                              else
+                              begin
+                                stdout.PrintLn('');
+                                connect.shutdown();
                               end;
                             end;
                         end
                     );
-
               end
             );
 

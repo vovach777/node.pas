@@ -44,6 +44,9 @@ contains
   np.promise in 'source\np.promise.pas',
   np.core in 'source\np.core.pas',
   np.libuv in 'source\np.libuv.pas',
-  np.winsock in 'source\np.winsock.pas';
+  np.winsock in 'source\np.winsock.pas',
+  np.core.ed in 'source\np.core.ed.pas',
+  np.json in 'source\np.json.pas',
+  np.HttpConnect in 'source\np.HttpConnect.pas';
 
 end.

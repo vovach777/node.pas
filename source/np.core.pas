@@ -1,11 +1,11 @@
 unit np.core;
 
 interface
-  uses np.winsock, sysutils,Classes{TStringList}, np.libuv, generics.collections;
+  uses np.winsock, sysutils,Classes{TStringList}, np.libuv, generics.collections, np.buffer;
   type
     TProc_APointer = TProc<Pointer>;
 
-
+    PBufferRef = np.buffer.PBufferRef;
     IQueueItem = interface
     ['{49B198FA-6AA5-43C4-9F04-574E0411EA76}']
       procedure Invoke;
@@ -53,6 +53,7 @@ interface
     IEventHandler = interface
     ['{2205ED21-A159-4085-8EF5-5C3715A4F6F4}']
        procedure remove;
+       procedure invoke(args: Pointer);
        function  GetID: integer;
        property ID: integer read GetID;
     end;
@@ -90,18 +91,30 @@ interface
      procedure Again;
   end;
 
+  PNPError = ^TNPError;
+  TNPError = record
+     code : integer;
+     msg  : string;
+  end;
+
      INPStream = interface(INPHandle)
        ['{DAF6338E-B124-403E-B4C9-BF5B3556697C}']
       procedure shutdown(Acallback : TProc=nil);
-      procedure write(data: Pbyte; dataLen : cardinal; Acallback: TProc=nil); overload;
-      procedure write(data: UTF8String; Acallback: TProc=nil); overload;
-      procedure setOnError(OnError: TProc<integer>);
-      procedure setOnClose(OnClose: TProc);
-      procedure setOnData(onData: TProc<PByte,Cardinal>);
-      procedure setOnEnd(onEnd: TProc);
+//      procedure write(data: Pbyte; dataLen : cardinal; Acallback: TProc=nil); overload;
+//      procedure write(data: UTF8String; Acallback: TProc=nil); overload;
+      //procedure setOnClose(OnClose: TProc);
+//      procedure setOnData(onData: TProc<PByte,Cardinal>);
+//      procedure setOnEnd(onEnd: TProc);
       function is_readable : Boolean;
       function is_writable: Boolean;
+      procedure setOnData(onData: TProc<PBufferRef>);
+      procedure setOnEnd(onEnd: TProc);
+      procedure setOnClose(onCloce: Tproc);
+      procedure setOnError(OnError: TProc<PNPError>);
+      procedure write(const data: BufferRef; Acallback: TProc=nil); overload;
+      procedure write(const data: UTF8String; Acallback: TProc=nil); overload;
      end;
+
     INPTCPStream = Interface(INPStream)
     ['{AF9699FF-CC5A-4004-A19A-DF6420141D55}']
        procedure bind(const Aaddr: UTF8String; Aport: word);
@@ -130,7 +143,7 @@ interface
     INPTCPServer = interface(INPHandle)
      ['{E20EB1A4-7A85-4C09-9FA5-FF821C68CEEE}']
        procedure setOnClient(OnClose: TOnTCPClient);
-       procedure setOnError(OnError: TProc<integer>);
+       procedure setOnError(OnError: TProc<PNPError>);
        procedure setOnClose(OnClose: TProc);
        procedure bind(const Aaddr: UTF8String; Aport: word);
        procedure bind6(const Aaddr: UTF8String; Aport: word; tcp6Only: Boolean=false);
@@ -164,36 +177,72 @@ interface
           property CWD : String read getCWD write setCWD;
       end;
 
-    TEventEmitter = class
+     IEventEmitter = Interface
+     ['{1C509C46-A6CC-492E-9117-8BF72F10244C}']
+       function on_(id: integer; p: TProc_APointer) : IEventHandler; overload;
+       function on_(id: integer; p : Tproc) : IEventHandler; overload;
+       function once(id: integer; p : TProc) : IEventHandler; overload;
+//       function addEventHandler(id: integer; p : Tproc) : IEventHandler; overload;
+//       function addEventHandler(id: integer; p : TProc_APointer) : IEventHandler; overload;
+       function once(id: integer; p : TProc_APointer) : IEventHandler;overload;
+       procedure RemoveAll;
+       function isEmpty: Boolean;
+       function CountOf(id : integer) : int64;
+       procedure emit(eventId: integer; eventArguments : Pointer = nil);
+     end;
+
+    TEventEmitter = class(TComponent, IEventEmitter)
     private
     type
        PLinked = ^TLinked;
        TLinked = record
-         //id : integer;
-         hasArg: Boolean;
+         id : integer;
+         //hasArg: Boolean;
          Item: IEventHandler;
          Next: PLinked;
          Prev: PLinked;
        end;
       var
        head,tail : PLinked;
-       gc: TStack< PLinked >;
-       procedure _remove( eh : IEventHandler );
-       function _add(id: integer; p: TProc; once: Boolean; hasArg: Boolean) : IEventHandler;
+       gc : TList< PLinked >;
+       emitCount : integer;
+       procedure _collect;
+    protected
+       procedure _remove( eh : IEventHandler ); virtual;
+       function _add(id: integer; p: TProc; once: Boolean; hasArg: Boolean) : IEventHandler; virtual;
     public
-//       id : integer;
-//       arguments : Pointer;
+       type THandlerOperation = (hoAdd,hoRemove);
+       var  onHandlerChange : TProc<integer,THandlerOperation>;
        constructor Create();
        function on_(id: integer; p: TProc_APointer) : IEventHandler; overload; inline;
        function on_(id: integer; p : Tproc) : IEventHandler; overload; inline;
-       function once(id: integer; p : TProc) : IEventHandler; overload;
-       function addEventHandler(id: integer; p : Tproc) : IEventHandler; overload;
-       function addEventHandler(id: integer; p : TProc_APointer) : IEventHandler; overload;
-       function once(id: integer; p : TProc_APointer) : IEventHandler; overload;
+       function once(id: integer; p : TProc) : IEventHandler; overload; inline;
+//       function addEventHandler(id: integer; p : Tproc) : IEventHandler; overload;
+//       function addEventHandler(id: integer; p : TProc_APointer) : IEventHandler; overload;
+       function once(id: integer; p : TProc_APointer) : IEventHandler; overload; inline;
        procedure RemoveAll;
+       function CountOf(id : integer) : int64;
        function isEmpty: Boolean;
        procedure emit(eventId: integer; eventArguments : Pointer = nil); overload;
        destructor Destroy;override;
+    end;
+
+    TIEventEmitter = class(TInterfacedObject, IEventEmitter)
+    protected
+       FEventEmitter: TEventEmitter;
+    private
+       function on_(id: integer; p: TProc_APointer) : IEventHandler; overload;
+       function on_(id: integer; p : Tproc) : IEventHandler; overload;
+       function once(id: integer; p : TProc) : IEventHandler; overload;
+       function doAddEvent(id : integer; p: Tproc; once:Boolean; hasArg: Boolean ) : IEventHandler; virtual;
+       function once(id: integer; p : TProc_APointer) : IEventHandler;overload;
+       procedure RemoveAll;
+       function CountOf(id : integer) : int64;
+       function isEmpty : Boolean;
+       procedure emit(eventId: integer; eventArguments : Pointer = nil);
+    public
+       constructor Create;
+       destructor destroy; override;
     end;
 
     TNPBaseHandle = class(TInterfacedObject, INPHandle)
@@ -235,9 +284,9 @@ interface
        FShutdown: Boolean;
        FShutdownReq: uv_shutdown_t;
        FShutdownRef : INPStream;
-       FOnError : TProc<integer>;
+       FOnError : TProc<PNPError>;
        FOnEnd   : TProc;
-       FOnData  : TProc<PByte,Cardinal>;
+       FOnData  : TProc<PBufferRef>;
        FOnShutdown: TProc;
        FOnConnect : TProc;
        FConnect : Boolean;
@@ -249,11 +298,11 @@ interface
        procedure _onRead(data: Pbyte; nread: size_t);
        procedure _onEnd;
        procedure _onError(status: integer);
-
+       procedure writeInternal(data: PByte; len: Cardinal; ACallBack: TProc);
      protected
        procedure __onError(status: integer);
-       procedure setOnError(OnError: TProc<integer>);
-       procedure setOnData(onData: TProc<PByte,Cardinal>);
+       procedure setOnError(OnError: TProc<PNPError>);
+       procedure setOnData(onData: TProc<PBufferRef>);
        procedure setOnEnd(onEnd: TProc);
        procedure setOnConnect(onConnect : TProc);
        procedure onClose; override;
@@ -262,8 +311,8 @@ interface
        procedure pipe_bind(const name: UTF8String);
        procedure _onConnect; virtual;
        procedure _onConnection; virtual;
-       procedure write(data: PByte; len : Cardinal; ACallBack: TProc = nil); overload;
-       procedure write(data : UTF8String; ACallBack: TProc = nil); overload;
+       procedure write(const data:BufferRef; ACallBack: TProc = nil); overload;
+       procedure write(const data : UTF8String; ACallBack: TProc = nil); overload;
        procedure shutdown(ACallBack: TProc);
        procedure _listen(backlog:integer);
 //       procedure _accept(client : puv_stream_t);
@@ -317,7 +366,6 @@ interface
       end;
 
 
-
   TLoop = class(TEventEmitter)
   public
     Fuvloop: puv_loop_t;
@@ -341,7 +389,9 @@ interface
 //    function _Release: Integer; stdcall;
     function uvloop: puv_loop_t;
     destructor Destroy; override;
+    procedure run_nowait();
     private
+    check: INPCheck;
     procedure run();
   end;
 
@@ -421,8 +471,8 @@ interface
 const
   ev_loop_shutdown = 1;
   ev_loop_beforeTerminate = 2;
-threadvar
-  this_eventHandler: IEventHandler;
+//threadvar
+//  this_eventHandler: IEventHandler;
 
 implementation
 
@@ -443,13 +493,15 @@ type
     TEventHandler = class(TInterfacedObject, IEventHandler)
     private
       id : integer;
+      hasArg : Boolean;
       procQueue: TEventEmitter;
       proc: TProc;
       once: Boolean;
       link: TEventEmitter.PLinked;
       function  GetID: integer;
       procedure remove;
-      Constructor Create(Aid : integer);
+      procedure invoke(args: Pointer);
+      Constructor Create();
       destructor Destroy;override;
     end;
 
@@ -510,23 +562,25 @@ var
   tmp : PLinked;
   qi : TEventHandler;
 begin
+  assert(id <> 0);
   if not assigned(p) then
     exit(nil);
-  if gc.Count > 0 then
-     tmp := gc.Pop
-  else
-     new(tmp);
-  qi := TEventHandler.Create(id);
+  new(tmp);
+  qi := TEventHandler.Create();
+  qi.id := id;
   qi.procQueue := self;
   qi.proc := p;
+  qi.HasArg := hasArg;
   qi.once := once;
   qi.link := tmp;
 
   result := qi;
-//  tmp.id := id;
-  tmp.hasArg := hasArg;
+  tmp.id := id;
+//  tmp.hasArg := hasArg;
 
-  tmp.Item := result;
+  tmp.Item := qi;
+  qi := nil;
+
   tmp.Prev := nil;
   tmp.Next := nil;
     if head = nil then
@@ -543,65 +597,104 @@ begin
      tail := tmp;
     end;
   //inc(count);
+  if assigned(onHandlerChange) then
+     onHandlerChange(id,hoAdd);
+end;
+
+procedure TEventEmitter._collect;
+var
+  i : integer;
+  tmp : PLinked;
+begin
+  if emitCount = 0 then
+  begin
+    for i := 0 to gc.Count-1 do
+    begin
+      tmp := gc[i];
+      dispose(tmp);
+    end;
+    gc.Count := 0;
+  end;
 end;
 
 procedure TEventEmitter._remove(eh: IEventHandler);
 var
   qi: TEventHandler;
   link : PLinked;
+  id : integer;
 begin
+  assert(assigned(eh));
   qi := TEventHandler(eh);
-  if assigned(qi) then
+  assert(assigned(qi));
+  assert(assigned(qi.proc));
+  assert(assigned(qi.link));
+  assert(qi.id = qi.link.id);
+  assert(qi.id <> 0);
+  id := qi.id;
+  qi.procQueue := nil;
+  qi.proc := nil;
+  link := qi.link;
+  qi.link := nil;
+  link.Item := nil;
+  if link.Prev <> nil then
+    link.Prev.Next := link.Next
+  else
+    head := link.Next;
+  if link.Next <> nil then
+    link.Next.Prev := link.Prev
+  else
+    tail := link.Prev;
+  link.Item := nil;
+  link.id   := 0;
+  gc.add(link);
+  if assigned(onHandlerChange) then
   begin
-    qi.procQueue := nil;
-    qi.proc := nil;
-    link := qi.link;
-    qi.link := nil;
-    if assigned( link ) then
-    begin
-       link.Item := nil;
-       if link.Prev <> nil then
-         link.Prev.Next := link.Next
-       else
-         head := link.Next;
-       if link.Next <> nil then
-         link.Next.Prev := link.Prev
-       else
-         tail := link.Prev;
-       gc.Push(link);
-//       setImmediate(
-//         procedure
-//         begin
-//           dispose(link);
-//         end);
+    try
+      onHandlerChange(id, hoRemove);
+    except
     end;
   end;
 end;
 
-function TEventEmitter.addEventHandler(id:integer; p: Tproc): IEventHandler;
-begin
-  result := _add(id,p,false, false);
-end;
+//function TEventEmitter.addEventHandler(id:integer; p: Tproc): IEventHandler;
+//begin
+//  result := _add(id,p,false, false);
+//end;
+//
+//function TEventEmitter.addEventHandler(id: integer; p: TProc_APointer): IEventHandler;
+//begin
+//  result := _add(id,TProc(p), false, true);
+//end;
 
-function TEventEmitter.addEventHandler(id: integer; p: TProc_APointer): IEventHandler;
+function TEventEmitter.CountOf(id: integer): int64;
+var
+  tmp : PLinked;
 begin
-  result := _add(id,TProc(p), false, true);
+  tmp := head;
+  result := 0;
+  while assigned(tmp) do
+  begin
+    if tmp.id = Id then
+    begin
+       inc(result);
+    end;
+    tmp := tmp.Next;
+  end;
 end;
 
 constructor TEventEmitter.Create();
 begin
-  inherited Create;
-  gc := TStack< PLinked >.Create;
+  inherited Create(nil);
+  gc := TList< PLinked >.Create;
 end;
 
 destructor TEventEmitter.Destroy;
+var
+  tmp : IEventHandler;
+  i : integer;
 begin
-  while head <> nil do
-  begin
-    _remove(TEventHandler(head.Item));
-  end;
-  while gc.Count > 0 do
-     Dispose(gc.Pop);
+  onHandlerChange := nil;
+  RemoveAll;
   freeAndNil(gc);
   inherited;
 end;
@@ -611,28 +704,34 @@ procedure TEventEmitter.emit(eventId: integer; eventArguments: Pointer=nil);
 var
   tmp : PLinked;
   qi : TEventHandler;
-  bk : IEventHandler;
+  i : integer;
 begin
+  inc( emitCount );
+  try
+  assert(EventId <> 0);
   tmp := head;
   while assigned(tmp) do
   begin
-    qi := TEventHandler(tmp.Item);
-    if assigned(qi.proc) and (qi.id = eventId) then
+    if tmp.id = eventId then
     begin
-      bk := this_eventHandler;
-      this_eventHandler := tmp.Item;
-        if tmp.hasArg then
-          TProc_APointer(qi.proc)(eventArguments)
-        else
-          qi.proc();
-        if qi.once then
-           _remove(qi);
-      this_eventHandler:=bk;
-      bk := nil;
+      assert(assigned(tmp.Item));
+      tmp.Item.invoke(eventArguments);
+//      qi := TEventHandler(ref);
+//      assert(assigned(qi.proc));
+//      assert(qi.id = eventId);
+//      if qi.hasArg then
+//         TProc_APointer(qi.proc)(eventArguments)
+//      else
+//        qi.proc();
+//      if qi.once then
+//         ref.remove;
     end;
     tmp := tmp.Next;
   end;
-
+  finally
+    dec(emitCount);
+    _collect;
+  end;
 end;
 
 function TEventEmitter.isEmpty: Boolean;
@@ -647,12 +746,12 @@ end;
 
 function TEventEmitter.on_(id: integer; p: Tproc): IEventHandler;
 begin
-  result := addEventHandler(id, p);
+  result := _add(id, p, false,false);
 end;
 
 function TEventEmitter.on_(id: integer; p: TProc_APointer): IEventHandler;
 begin
-  result := addEventHandler(id,p);
+  result := _add(id,Tproc(p),false, true);
 end;
 
 function TEventEmitter.once(id: integer; p: TProc): IEventHandler;
@@ -661,32 +760,17 @@ begin
 end;
 
 procedure TEventEmitter.RemoveAll;
-var
-  next, tmp : PLinked;
-  qi : TEventHandler;
 begin
-  next := head;
-  while assigned(next) do
-  begin
-    if assigned(next.Item) then
-    begin
-      qi := TEventHandler(next.Item);
-      qi.procQueue := nil;
-      qi.proc := nil;
-      qi.link := nil;
-    end;
-    tmp := next;
-    next := Next.Next;
-    gc.Push(tmp);
-//    dispose(tmp);
-  end;
+  while assigned(tail) do
+      tail.Item.remove;
+  _collect;
 end;
 
 { TEventHandler }
 
-constructor TEventHandler.Create(Aid: integer);
+constructor TEventHandler.Create();
 begin
-  id := Aid;
+  inherited;
 end;
 
 destructor TEventHandler.Destroy;
@@ -700,9 +784,27 @@ begin
   result := id;
 end;
 
+procedure TEventHandler.invoke(args: Pointer);
+var
+  ref: IEventHandler;
+begin
+  ref := self; //calling callback can destroy object by ref = 0. keep object alive while invoke
+  if (id <> 0) and assigned(Proc) then
+  begin
+//      assert(assigned(qi.proc));
+//      assert(qi.id = eventId);
+      if hasArg then
+         TProc_APointer(proc)(args)
+      else
+        proc();
+      if once then
+         remove;
+  end;
+end;
+
 procedure TEventHandler.remove;
 begin
-  if assigned(procQueue) then
+  if assigned(procQueue) and assigned(proc) and assigned(link) and (id <> 0) then
      procQueue._remove(self);
 end;
 
@@ -833,6 +935,7 @@ end;
 constructor TLoop.Create();
 begin
   tv_loop := self;
+  loopThread := uv_thread_self;
   inherited Create();
   New(Fuvloop);
   duv_ok( uv_loop_init(Fuvloop) );
@@ -850,6 +953,12 @@ begin
          while nextTickQueue.emit do;
 
      end);
+  check := SetCheck(
+    procedure
+    begin
+      checkQueue.emit;
+    end);
+    check.unref;
 end;
 
 
@@ -926,18 +1035,20 @@ begin
     uv_close(handle, uv_get_close_cb(handle));
 end;
 
+procedure TLoop.run_nowait();
+begin
+  loopThread := uv_thread_self;
+  while nextTickQueue.emit do;
+  if checkQueue.isEmpty then
+    check.unref
+  else
+   check.ref;
+  uv_run(uvloop, UV_RUN_NOWAIT);
+end;
+
 procedure TLoop.run();
-var
-  check: INPCheck;
 begin
   try
-    loopThread := uv_thread_self;
-    check := SetCheck(
-      procedure
-      begin
-        checkQueue.emit;
-      end);
-      check.unref;
 //      setImmediate(mainProc);
     repeat
       while nextTickQueue.emit do;
@@ -1377,16 +1488,17 @@ begin
   {TODO: move to class}
   ud := uv_get_user_data(req);
   try
-    if status = 0 then
-    begin
+//    if status = 0 then
+//    begin
       if assigned( ud.FOnShutdown ) then
          ud.FOnShutdown();
       ud.FOnShutdown := nil;
-      if not ud.FRead then
-        ud.Clear;
-    end
-    else
-      ud.__onError(status);
+//      if not ud.FRead then
+      ud.Clear;
+//    end
+//    else
+//      ud.__onError(status);
+
   except
   end;
   ud.FShutdownRef := nil;
@@ -1433,16 +1545,10 @@ begin
   {TODO: move to class}
   ud := uv_get_user_data(stream);
   assert(assigned(ud));
-////     //ud.read_stop;
-////     ud._onEnd;
-//     ud.Clear;
-//     exit;
-//  end;
-//  assert(nread <> 0);
-  if (nread <= 0) then
+  if (nread < 0) then
   begin
     ud.read_stop;
-    if (nread = UV_EOF) or (nread=0) then
+    if (nread = UV_EOF) then
     begin
       try
         ud._onEnd;
@@ -1517,18 +1623,29 @@ begin
 end;
 
 procedure TNPStream._onError(status: integer);
+var
+  err: TNPError;
 begin
   FOnData := nil;
   FOnEnd := nil;
   if assigned(FOnError) then
-    FOnError(status);
+  begin
+    err.code := status;
+    err.msg := Format('%s:%s!', [uv_err_name(status), uv_strerror(status)]);
+    FOnError(@err);
+  end;
   FOnError := nil;
 end;
 
 procedure TNPStream._onRead(data: Pbyte; nread: size_t);
+var
+  arg: BufferRef;
 begin
   if assigned(FOnData) then
-     FOnData(data,nread);
+  begin
+     arg := BufferRef.CreateWeakRef(data,nread);
+     FOnData(@arg);
+  end;
 end;
 
 procedure TNPStream._writecb(wd: PWriteData; status : integer);
@@ -1587,7 +1704,7 @@ begin
   FOnConnect := onConnect;
 end;
 
-procedure TNPStream.setOnData(onData: TProc<PByte, Cardinal>);
+procedure TNPStream.setOnData(onData: TProc<PBufferRef>);
 var
   wasAssigned : Boolean;
 begin
@@ -1605,7 +1722,7 @@ begin
   FOnEnd := onEnd;
 end;
 
-procedure TNPStream.setOnError(OnError: TProc<integer>);
+procedure TNPStream.setOnError(OnError: TProc<PNPError>);
 begin
   FOnError := onError;
 end;
@@ -1642,12 +1759,6 @@ begin
   end;
 end;
 
-procedure TNPStream.write(data: UTF8String; ACallBack: TProc);
-begin
-  if length(data) > 0 then
-    write(@data[1],length(data), ACallBack);
-end;
-
 function TNPStream.is_writable: Boolean;
 begin
   result :=  uv_is_writable(FStream) <> 0;
@@ -1677,24 +1788,45 @@ begin
   end;
 end;
 
-procedure TNPStream.write(data: PByte; len: Cardinal; ACallBack: TProc);
+procedure TNPStream.writeInternal(data: PByte; len: Cardinal; ACallBack: TProc);
 var
   wd : PWriteData;
   status : integer;
 begin
-  if len > 0 then
-  begin
+//  if len > 0 then
+//  begin
     new(wd);
     wd.callback := ACallBack;
     uv_set_user_data(wd, self);
-    wd.buf.len := len;
-    GetMem( wd.buf.base, len );
-    move( data^, wd.buf.base^, len );
+    if len > 0 then
+    begin
+      wd.buf.len := len;
+      GetMem( wd.buf.base, len );
+      move( data^, wd.buf.base^, len );
+    end
+    else
+    begin
+      wd.buf.len := 0;
+      wd.buf.base := nil;
+    end;
     wd.streamRef := self;
     status := uv_write(puv_write_t(wd),FStream, @wd.buf, 1, @__write_cb);
     if status <> 0 then
       _writecb(wd, status);
-  end;
+//  end;
+end;
+
+procedure TNPStream.write(const data: UTF8String; ACallBack: TProc);
+begin
+  if length(data) > 0 then
+    writeInternal(@data[1],length(data), ACallBack)
+  else
+    writeInternal(nil,0, ACallBack)
+end;
+
+procedure TNPStream.write(const data: BufferRef; ACallBack: TProc);
+begin
+  writeInternal(data.ref,data.length, ACallBack)
 end;
 
   procedure __on_close(handle: puv_handle_t); cdecl;
@@ -2386,5 +2518,67 @@ end;
   end;
 
 
+
+{ TIEventEmitter }
+
+
+function TIEventEmitter.CountOf(id: integer): int64;
+begin
+  result := FEventEmitter.CountOf(id);
+end;
+
+constructor TIEventEmitter.Create;
+begin
+  inherited;
+  FEventEmitter := TEventEmitter.Create;
+end;
+
+destructor TIEventEmitter.destroy;
+begin
+  FreeAndNil(FEventEmitter);
+  inherited;
+end;
+
+function TIEventEmitter.doAddEvent(id: integer; p: Tproc; once,
+  hasArg: Boolean) : IEventHandler;
+begin
+   result := FEventEmitter._add(id,p,once,hasArg);
+end;
+
+procedure TIEventEmitter.emit(eventId: integer; eventArguments: Pointer);
+begin
+  FEventEmitter.emit(eventId,eventArguments);
+end;
+
+function TIEventEmitter.isEmpty: Boolean;
+begin
+  result := FEventEmitter.isEmpty;
+end;
+
+
+function TIEventEmitter.once(id: integer; p: TProc_APointer): IEventHandler;
+begin
+  Result := doAddEvent(id, TProc(p), true, true);
+end;
+
+function TIEventEmitter.once(id: integer; p: TProc): IEventHandler;
+begin
+  result := doAddEvent(id, p, true, false );
+end;
+
+function TIEventEmitter.on_(id: integer; p: TProc_APointer): IEventHandler;
+begin
+  result := doAddEvent(id, Tproc(p),false, true);
+end;
+
+function TIEventEmitter.on_(id: integer; p: Tproc): IEventHandler;
+begin
+  result := doAddEvent(id,p,false,false);
+end;
+
+procedure TIEventEmitter.RemoveAll;
+begin
+  FEventEmitter.RemoveAll
+end;
 
 end.
