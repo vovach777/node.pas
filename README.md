@@ -21,7 +21,7 @@ NodeJS-like ecosystem
 * Http(s) server
 * Promises
 * JSON
-* Http(c) client
+* Http(s) client
 
 There is no documentaion et. 
 You can study examples for basical usage.
