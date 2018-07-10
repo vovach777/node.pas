@@ -47,6 +47,7 @@ contains
   np.winsock in 'source\np.winsock.pas',
   np.core.ed in 'source\np.core.ed.pas',
   np.json in 'source\np.json.pas',
-  np.HttpConnect in 'source\np.HttpConnect.pas';
+  np.HttpConnect in 'source\np.HttpConnect.pas',
+  np.eventEmitter in 'source\np.eventEmitter.pas';
 
 end.

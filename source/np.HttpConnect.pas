@@ -1,7 +1,7 @@
 unit np.HttpConnect;
 
 interface
- uses np.core, np.httpParser, Generics.Collections, sysUtils,
+ uses np.core, np.EventEmitter, np.httpParser, Generics.Collections, sysUtils,
       np.buffer, np.url, np.OpenSSL;
 
  const

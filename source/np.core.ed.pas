@@ -5,6 +5,7 @@ interface
   uses
      system.sysUtils,
      np.core,
+     np.EventEmitter,
      np.Buffer;
 
   const

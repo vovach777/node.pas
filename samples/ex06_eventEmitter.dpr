@@ -8,6 +8,7 @@ uses
   windows,
   System.SysUtils,
    np.core,
+   np.eventEmitter,
    System.Diagnostics,
    System.Threading,
    System.Classes;
