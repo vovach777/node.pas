@@ -138,7 +138,7 @@ end;
 
 destructor TSWTCPConnect.Destroy;
 begin
-  WriteLn('TSWTCPConnect.Destroy');
+//  WriteLn('TSWTCPConnect.Destroy');
   inherited;
 end;
 
@@ -244,7 +244,7 @@ end;
 
 destructor TSWTCPClient.Destroy;
 begin
-  WriteLn('TSWTCPClient.Destroy');
+//  WriteLn('TSWTCPClient.Destroy');
   inherited;
 end;
 

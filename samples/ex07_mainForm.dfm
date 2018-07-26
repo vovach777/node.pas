@@ -36,7 +36,9 @@ object Form1: TForm1
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
-    Text = 'https://github.com/vovach777/node.pas'
+    Text = 
+      'https://raw.githubusercontent.com/vovach777/node.pas/master/READ' +
+      'ME.md'
   end
   object Button1: TButton
     Left = 552
@@ -63,8 +65,8 @@ object Form1: TForm1
   end
   object ApplicationEvents1: TApplicationEvents
     OnMessage = ApplicationEvents1Message
-    Left = 56
-    Top = 32
+    Left = 16
+    Top = 88
   end
   object Timer1: TTimer
     Interval = 10

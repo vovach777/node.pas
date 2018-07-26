@@ -27,6 +27,9 @@
         <Projects Include="samples\ex07_gui.dproj">
             <Dependencies>Node.pas.dproj</Dependencies>
         </Projects>
+        <Projects Include="samples\ex08_httpServer.dproj">
+            <Dependencies>Node.pas.dproj</Dependencies>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -107,14 +110,23 @@
     <Target Name="ex07_gui:Make" DependsOnTargets="Node.pas:Make">
         <MSBuild Projects="samples\ex07_gui.dproj" Targets="Make"/>
     </Target>
+    <Target Name="ex08_httpServer" DependsOnTargets="Node.pas">
+        <MSBuild Projects="samples\ex08_httpServer.dproj"/>
+    </Target>
+    <Target Name="ex08_httpServer:Clean" DependsOnTargets="Node.pas:Clean">
+        <MSBuild Projects="samples\ex08_httpServer.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ex08_httpServer:Make" DependsOnTargets="Node.pas:Make">
+        <MSBuild Projects="samples\ex08_httpServer.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="Node_pas;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread;ex06_eventEmitter;ex07_gui"/>
+        <CallTarget Targets="Node_pas;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread;ex06_eventEmitter;ex07_gui;ex08_httpServer"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Node_pas:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean;ex06_eventEmitter:Clean;ex07_gui:Clean"/>
+        <CallTarget Targets="Node_pas:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean;ex06_eventEmitter:Clean;ex07_gui:Clean;ex08_httpServer:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Node_pas:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make;ex06_eventEmitter:Make;ex07_gui:Make"/>
+        <CallTarget Targets="Node_pas:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make;ex06_eventEmitter:Make;ex07_gui:Make;ex08_httpServer:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
     <ItemGroup Condition="'$(BuildGroup)'=='buildGrp'">
@@ -124,14 +136,14 @@
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex05_thread.dproj">
-            <ProjectGuid>{CC366E82-CDB2-49E5-9CC8-E074E4347D6B}</ProjectGuid>
+        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
+            <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
-            <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
+        <BuildGroupProject Include="samples\ex05_thread.dproj">
+            <ProjectGuid>{CC366E82-CDB2-49E5-9CC8-E074E4347D6B}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
@@ -157,6 +169,12 @@
         <BuildGroupProject Include="samples\ex03_spawn.dproj">
             <ProjectGuid>{6D9A2C5F-991F-4567-8636-697BA0C60F66}</ProjectGuid>
             <Configurations>Release</Configurations>
+            <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex08_httpServer.dproj">
+            <ProjectGuid>{AA2931AF-0091-4646-AE87-ED647942FA70}</ProjectGuid>
+            <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>

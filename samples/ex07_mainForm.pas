@@ -38,7 +38,6 @@ procedure TForm1.ApplicationEvents1Message(var Msg: tagMSG;
 begin
   Handled := false;
   loop.run_nowait;
-
 end;
 
 procedure TForm1.Button1Click(Sender: TObject);
@@ -50,7 +49,7 @@ begin
        if value is TObjectValue<TJSONPair> then
        begin
          logLines(
-          prettyJSON(         TObjectValue<TJSONPair>( value ).Value.ToString  )
+          prettyJSON(  TObjectValue<TJSONPair>( value ).Value.ToString  )
             );
        end
        else

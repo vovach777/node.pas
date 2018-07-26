@@ -24,8 +24,11 @@ Interface
     public
        procedure Parse(const AURL: BufferRef); overload;
        procedure Parse(const AURL: String); overload;
-       class function DecodeURL(const s : string) : string; static;
+       class function _DecodeURL(const s : string) : string; static;
        function HttpHost: string;
+       function IsDefaultPort: Boolean;
+       function HasCredentials : Boolean;
+       function ToString : string;
        property Schema : string read FSchema;
        property UserName: string read FUserName;
        property HostName: string read FHostName;
@@ -37,7 +40,61 @@ Interface
     end;
 
 implementation
-  uses np.ut, np.netEncoding;
+  uses np.ut, np.NetEncoding;
+
+
+function _dec(Input: BufferRef): UTF8String;
+
+  function DecodeHexChar(const C: UTF8Char): Byte;
+  begin
+    case C of
+       '0'..'9': Result := Ord(C) - Ord('0');
+       'A'..'F': Result := Ord(C) - Ord('A') + 10;
+       'a'..'f': Result := Ord(C) - Ord('a') + 10;
+    else
+      raise EConvertError.Create('');
+    end;
+  end;
+
+  function DecodeHexPair(const C1, C2: UTF8Char): UTF8Char; inline;
+  begin
+    Result := UTF8Char( DecodeHexChar(C1) shl 4 + DecodeHexChar(C2) );
+  end;
+
+var
+  I: Integer;
+begin
+  SetLength(result, Input.length * 4);
+  I := 1;
+  while (Input.length > 0) and (I <= Length(result)) do
+  begin
+    case UTF8Char(Input.ref^) of
+      '+':
+        result[I] := ' ';
+      '%':
+        begin
+          Input.TrimL(1);
+          // Look for an escaped % (%%)
+          if UTF8Char(Input.ref^) = '%' then
+            result[I] := '%'
+          else
+          begin
+            // Get an encoded byte, may is a single byte (%<hex>)
+            // or part of multi byte (%<hex>%<hex>...) character
+            if (Input.length < 2) then
+              break;
+            result[I] := DecodeHexPair( UTF8Char( Input.ref[0] ),  UTF8Char( Input.ref[1] ));
+            Input.TrimL(1);
+          end;
+        end;
+    else
+       result[I] :=  UTF8Char(Input.ref^)
+    end;
+    Inc(I);
+    Input.TrimL(1);
+  end;
+  SetLength(result, I-1);
+end;
 
 
 { TURL }
@@ -48,12 +105,13 @@ var
   url,hostPort,Auth,Path,Params: BufferRef;
   hasColon,eop:Boolean;
 begin
+  WriteLn( AURL.AsUtf8String );
   self := default(TURL);
   url := Buffer.Create([AURL,Buffer.Create([0])]);
   I :=  url.Find( Buffer.Create('://') );
   if i >= 0 then
   begin
-    FSchema := LowerCase( url.slice(0,I).AsString(65001) );
+    FSchema := LowerCase( url.slice(0,I).AsUtf8String );
     url.TrimL(I+3);
   end;
   Auth := Buffer.Null;
@@ -87,7 +145,7 @@ begin
     ord('?'),0:
       begin
         path := url.slice(0,i);
-        FfullPath := DecodeURL(url.AsString(CP_USASCII));
+        FfullPath := _dec(url.slice(0,url.length-1) );
         url.TrimL(i);
         I := 0;
         break;
@@ -96,7 +154,7 @@ begin
     inc(i);
   until false;
 
-  FPath := DecodeURL( path.AsString(CP_USASCII) );
+  FPath := _dec(path);
 
   repeat
     case url.ref[i] of
@@ -121,13 +179,13 @@ begin
       if auth.ref[i] = ord(':') then
       begin
         hasColon := true;
-        FUserName := DecodeURL(Auth.slice(0,i).AsString(CP_USASCII) );
-        FPassword := DecodeURL(Auth.slice(i+1).AsString(CP_USASCII) );
+        FUserName := _dec(Auth.slice(0,i));
+        FPassword := _dec(Auth.slice(i+1));
         break;
       end;
     end;
     if not hasColon then
-       FUserName := Auth.AsString(CP_USASCII);
+       FUserName := _dec( Auth );
   end;
   if Params.length > 0 then
   begin
@@ -143,14 +201,14 @@ begin
       eop := (i=params.length) or (params.ref[i] = ord('&'));
       if (Fparams[k].Name = '') and ((params.ref[i] = ord('=')) or eop) then
       begin
-          Fparams[k].Name := DecodeURL( params.slice(0,i).AsString(CP_USASCII));
+          Fparams[k].Name := _dec( params.slice(0,i));
           params.TrimL(i+1);
           i := 0;
       end
       else
       if (Fparams[k].Value = '') and (eop) then
       begin
-          Fparams[k].Value := DecodeURL(params.slice(0,i).AsString(CP_USASCII));
+          Fparams[k].Value := _dec(params.slice(0,i));
           params.TrimL(i+1);
           i := 0;
       end
@@ -161,7 +219,7 @@ begin
     until k = paramCount;
   end;
 
-  FHost := DecodeURL( hostPort.AsString(CP_USASCII) );
+  FHost := _dec( hostPort );
   if hostPort.length > 0 then
   begin
     hasColon := false;
@@ -170,8 +228,8 @@ begin
       if hostPort.ref[i] = ord(':') then
       begin
         hasColon := true;
-        FHostName := DecodeURL( hostPort.slice(0,i).AsString(CP_USASCII) );
-        FPort := StrToIntDef( hostPort.slice(i+1).AsString(CP_USASCII), 0) and $FFFF;
+        FHostName := _dec( hostPort.slice(0,i) );
+        FPort := StrToIntDef( hostPort.slice(i+1).AsUtf8String, 0) and $FFFF;
         break;
       end;
     end;
@@ -180,29 +238,36 @@ begin
   end;
   if FPath = '' then
     FPath := '/';
-
-//  if (FUserName <> '') and (FPassword <> '') then
-//    WriteLn('Auth: ', FUserName,'/',FPassword);
-//
-////  WriteLn('Host: ', hostPort.AsString(CP_USASCII));
-//  for i := 0 to length(FParams)-1 do
-//  begin
-//    WriteLn('  "', FParams[i].Name,'"=>"',FParams[i].Value,'"');
-//  end;
-//
-//  WriteLn('Path: ', path.AsString(CP_USASCII));
-////  WriteLn('Params: ',params.AsString(CP_USASCII));
 end;
 
 procedure TURL.parse(const AURL: String);
 begin
-   parse(Buffer.Create(AUrl, CP_USASCII));
+   parse(Buffer.Create(AUrl));
 end;
 
-class function TURL.DecodeURL(const s: string): string;
+function _enc(const s : string ) : string; inline;
+begin
+   result := TNetEncoding.URL.Encode(s);
+end;
+
+function TURL.ToString: string;
+begin
+   result := FSchema + '://';
+   if HasCredentials then
+   begin
+    result := result + _enc( FUserName )+':'+ _enc( FPassword ) +'@';
+   end;
+   result := result + _enc(HostName);
+   if not IsDefaultPort then
+     result := result + ':' + UIntToStr(GetPort);
+   result := result + _enc( FfullPath );
+end;
+
+class function TURL._DecodeURL(const s: string): string;
 begin
   try
-    result := TNetEncoding.URL.Decode(s);
+    // result := TNetEncoding.URL.Decode(s);
+     result := _dec(Buffer.Create(s));
   except
     raise EURL.CreateFmt('Can not decode URL %s',[s]);
   end;
@@ -221,13 +286,29 @@ begin
   raise EURL.Create('Uknown Schema');
 end;
 
+function TURL.HasCredentials: Boolean;
+begin
+   result := (FUserName <> '') or (FPassword <> '');
+end;
+
 function TURL.HttpHost: string;
 begin
-  if (FSchema = 'http') and (Port = 80) then
+  if SameText(FSchema,'http') and (Port = 80) then
      exit(FHost)
   else
      exit(Format('%s:%u',[FHostName,Port]));
 
+end;
+
+function TURL.IsDefaultPort: Boolean;
+begin
+  if SameText(FSchema,'http') and (Port = 80) then
+     exit(true);
+  if SameText(FSchema,'https') and (Port = 443) then
+     exit(true);
+  if SameText(FSchema,'rtsp') and (Port = 554) then
+     exit(true);
+  exit(false);
 end;
 
 end.

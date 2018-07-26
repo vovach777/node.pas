@@ -1032,20 +1032,20 @@ procedure TNPTCPHandle.getpeername_port(out name: string; out port: word);
 var
   sa: Tsockaddr_in_any;
   len : integer;
-  nameBuf : array [0..128] of PUTF8Char;
+  nameBuf : array [0..128] of UTF8Char;
 begin
   len := sizeof(sa);
   duv_ok( uv_tcp_getpeername(puv_tcp_t(FHandle),sa,len) );
   case sa.ip4.sin_family of
      UV_AF_INET:
         begin
-         duv_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
-         name := UTF8String(@nameBuf[0]);
+          duv_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
+          name := UTF8String(PUTF8Char( @nameBuf ));
         end;
      UV_AF_INET6:
         begin
-         duv_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
-         name := UTF8String(@nameBuf[0]);
+          duv_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
+          name := UTF8String(PUTF8Char( @nameBuf ));
         end;
       else
         assert(false);
@@ -1064,20 +1064,20 @@ procedure TNPTCPHandle.getsockname_port(out name: string; out port: word);
 var
   sa: Tsockaddr_in_any;
   len : integer;
-  nameBuf : array [0..128] of PUTF8Char;
+  nameBuf : array [0..128] of UTF8Char;
 begin
   len := sizeof(sa);
   duv_ok( uv_tcp_getsockname(puv_tcp_t(FHandle),sa,len) );
   case sa.ip4.sin_family of
      UV_AF_INET:
         begin
-         duv_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
-         name := UTF8String(@nameBuf[0]);
+          duv_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
+          name := UTF8String(PUTF8Char( @nameBuf ));
         end;
      UV_AF_INET6:
         begin
-         duv_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
-         name := UTF8String(@nameBuf[0]);
+          duv_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
+          name := UTF8String(PUTF8Char( @nameBuf ));
         end;
       else
         assert(false);

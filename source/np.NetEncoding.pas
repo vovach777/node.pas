@@ -747,7 +747,7 @@ begin
         if Ord(Sp^) < 128 then
           Bytes[I] := Byte(Sp^)
         else
-          I := I + TEncoding.UTF8.GetBytes(String(Sp^), 0, 1, Bytes, I) - 1
+         I := I + TEncoding.UTF8.GetBytes(String(Sp^), 1, 1, Bytes, I) - 1;
 
       end;
       Inc(I);
@@ -815,7 +815,7 @@ begin
       else
       begin
         // Multi byte char
-        ByteCount := TEncoding.UTF8.GetBytes(String(Sp^), 0, 1, MultibyteChar, 0);
+        ByteCount := TEncoding.UTF8.GetBytes(String(Sp^), 1, 1, MultibyteChar, 0);
         for I := 0 to ByteCount - 1 do
           AppendByte(MultibyteChar[I], Rp);
       end
