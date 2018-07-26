@@ -105,7 +105,6 @@ var
   url,hostPort,Auth,Path,Params: BufferRef;
   hasColon,eop:Boolean;
 begin
-  WriteLn( AURL.AsUtf8String );
   self := default(TURL);
   url := Buffer.Create([AURL,Buffer.Create([0])]);
   I :=  url.Find( Buffer.Create('://') );

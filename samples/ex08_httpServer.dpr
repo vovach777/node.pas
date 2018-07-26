@@ -9,7 +9,7 @@ uses
   np.core,
   np.HttpServer,
   np.Buffer,
-  np.URL;
+  np.JSON;
 
   procedure main(const addr: string; port: word);
   var
@@ -25,9 +25,40 @@ uses
     server.setOnRequest(
        procedure (req : IHttpRequest; resp: IHttpResponse )
        var
-         msg : string;
+         msg,s : string;
+         json : TJSONPair;
+         i : integer;
        begin
-          if SameText( req.Path, '/exit') then
+          if SameText( req.Path, '/json') then
+          begin
+            resp.writeHeader(200);
+            resp.addHeader('Server','Node.pas example');
+            resp.addHeader('Content-Type', 'application/json');
+            resp.finish(
+                     Buffer.Create('{"msg":"Hello!"}')
+            );
+            exit;
+          end;
+          if SameText( req.Path, '/json-create') then
+          begin
+            resp.writeHeader(200);
+            resp.addHeader('Server','Node.pas example');
+            resp.addHeader('Content-Type', 'application/json');
+            json := TJSONPair.Create();
+            try
+              json['method'].AsString := req.Method;
+              json['path'].AsString := req.Path;
+              for s in req.Headers.Names do
+                json['headers'][s].AsString := req.Headers[s];
+              resp.finish(
+                         Buffer.Create(json.ToString)
+                       );
+            finally
+              json.Free;
+            end;
+            exit;
+          end;
+          if SameText( req.Path, '/shutdown') then
           begin
             msg := 'Goodbye';
             setTimeout(
@@ -43,7 +74,30 @@ uses
           resp.addHeader('Content-Type', 'text/html; charset=utf-8');
           resp.finish(
                 Buffer.Create(
-                Format('<h1>%s, %s!</h1><p>PATH: %s</p><h2>Request headers</h2><pre>%s</pre>----<br><b>/exit</b> to close server',
+                   Format(
+                       '<style>'+
+                      'table { border-collapse: collapse;}'+
+                      'td { border: 1px solid black; padding: 0 5px 0 5px;}'+
+                      '</style>'+
+                   '<h1>%s, %s!</h1><p>PATH: %s</p><h2>Request headers</h2><pre>%s</pre><hr>'+
+                '<table>'+
+                   '<tr>'+
+                      '<th>Operation</th>'+
+                      '<th>API</th>'+
+                   '</tr>'+
+                   '<tr>'+
+                       '<td>shutdown</td>'+
+                       '<td>/shutdown</td>'+
+                   '</tr>'+
+                   '<tr>'+
+                       '<td>simple json</td>'+
+                       '<td>/json</td>'+
+                   '</tr>'+
+                   '<tr>'+
+                       '<td>create json</td>'+
+                       '<td>/json-create</td>'+
+                   '</tr>'+
+                '</table>',
                       [
                       msg,
                       (req as INPTCPStream).getpeername,
