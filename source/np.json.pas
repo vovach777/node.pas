@@ -299,7 +299,10 @@ begin
         end;
       end;
     else
+    begin
       assert(false);
+      result := nil;
+    end;
   end;
 
 end;
@@ -418,9 +421,7 @@ function TJSONPair.Parse(const JSON: string; var I: integer) : TJSONPair;
 VAR
   L : INTEGER;
   J:INTEGER;
-  INT: INTEGER;
   K,V: String;
-  child : TJSONPair;
 begin
   result := self;
   if I < 1 then I := 1;
@@ -442,7 +443,6 @@ begin
          end;
       '[':
          begin
-           J := 0;
            INC(I);
            repeat
              AsArray[count] := TJSONPair.Create.Parse(JSON,I); //TODO: fix empty array : "array" : [] =>  "array.count = 0"
@@ -451,7 +451,6 @@ begin
            until not((I<=L) and (I>1) and (JSON[I-1]=','));
            {if (count = 1) and AsArray[0].IsNull then
                AsArray[0].Free;}
-
          end;
       '"':
          begin
@@ -521,17 +520,21 @@ begin
 end;
 
 procedure TJSONPair.SetAsArray(i: integer; const Value: TJSONPair);
-var
-  index : Integer;
 begin
   if value = nil then
   begin
     if Assigned(FArray) then
-      FArray.Delete(i);
+    begin
+      if (i < 0) then
+        FArray.Delete(FArray.Count-1)
+      else
+      if (i < FArray.Count) then
+         FArray.Delete(i);
+    end;
     exit;
   end;
   if i < 0 then
-   i := count;
+    i := count;
   if Assigned(Value.owner) and (Value.owner <> self) and assigned(Value.owner.FArray) then
   begin
     value.Owner.FArray.Extract(Value);

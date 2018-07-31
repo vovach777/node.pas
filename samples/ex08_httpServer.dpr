@@ -25,9 +25,9 @@ uses
     server.setOnRequest(
        procedure (req : IHttpRequest; resp: IHttpResponse )
        var
-         msg,s : string;
+         msg : string;
+         s : Utf8String;
          json : TJSONPair;
-         i : integer;
        begin
           if SameText( req.Path, '/json') then
           begin

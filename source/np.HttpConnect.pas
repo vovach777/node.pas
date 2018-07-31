@@ -401,8 +401,6 @@ begin
 end;
 
 destructor THttpConnect.Destroy;
-var
-  req: TBaseHttpRequest;
 begin
   Isshutdown := true;
   if assigned(con) then
