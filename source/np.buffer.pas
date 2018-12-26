@@ -16,7 +16,7 @@ interface
         function HasSize(count : integer) : Boolean; overload;
         function HasSize<T> : Boolean; overload; inline;
         function slice(offs,_size:integer) :BufferRef; overload;
-        function slice(offs:integer) : BufferRef; overload; inline;
+        function slice(offs:integer) : BufferRef; overload;
         function slice : BufferRef; overload; inline;
         procedure write(idx:integer; const buf: BufferRef);
         procedure write_as<T>(idx:integer; const v: T);

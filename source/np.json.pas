@@ -13,6 +13,7 @@ interface
        level : Cardinal;
        state : (cNormal,cStopLevel,cStopAll);
     end;
+    TJSONPairClass = class of TJSONPair;
     TJSONTypes = set of TJSONType;
     TJSONPair = class
     private
@@ -37,6 +38,7 @@ interface
       IsString  : String;
       IsInteger : int64;
       owner  : TJSONPair;
+//      FJSONPairClass  : TJSONPairClass;
       constructor Create(const Value: string); overload;
       destructor Destroy; override;
       procedure Clear;
@@ -55,6 +57,7 @@ interface
       class function DecodeJSONText(const JSON : string; var Index: Integer): string; overload; static;
 
       function ToString : string; override;
+      function CreateJSONPair: TJSONPair; virtual;
       function IsArray  : TJSONArray;
       function IsObject : TJSONObject;
 //      function save(out v : TJSONPair) : TJSONPair;
@@ -77,6 +80,13 @@ begin
   Parse(Value);
 end;
 
+function TJSONPair.CreateJSONPair: TJSONPair;
+type
+  TJSONPairClass = class of TJSONPair;
+begin
+  result := TJSONPairClass( self.ClassType ).Create;
+end;
+
 { TJSONPair }
 
 //constructor TJSONPair.Create( Parent : TJSONPair; theType : TJSONType);
@@ -89,7 +99,7 @@ var
   I : Integer;
   enum : TJSONPair;
 begin
-  result := TJSONPair.Create;
+  result := CreateJSONPair;
   result.name := name;
   case typeIs of
     json_int:
@@ -276,17 +286,16 @@ end;
 
 function TJSONPair.GetAsArray(i: integer): TJSONPair;
 begin
-  if i < 0 then i := 0;
-
+  if (i < 0) or (i = maxInt) then
+    i := count;
   case typeIs of
   json_boolean,
   json_int,
   json_text,
   json_null:
       begin
-        result := TJSONPair.Create
-        ('');
-        asArray[0] := result;
+        result := Clone;
+        asArray[i] := result;
       end;
   json_array,json_object:
       begin
@@ -294,7 +303,7 @@ begin
            exit(isArray[i])
         else
         begin
-          result := TJSONPair.Create;
+          result := CreateJSONPair;
           asArray[i] := result
         end;
       end;
@@ -346,7 +355,7 @@ function TJSONPair.GetAsObject(const Key: String): TJSONPair;
 begin
   if (typeIs <> json_object) or not IsObject.TryGetValue(Key,result) then
   begin
-     result := TJSONPair.Create;
+     result := CreateJSONPair;
      asObject[Key] := result;
   end;
 end;
@@ -436,7 +445,7 @@ begin
               K := DecodeJSONText(JSON,I);
               While (I<=L) and (JSON[I] <> ':') DO INC(I);
               INC(I);
-              AsObject[K] := TJSONPair.Create.Parse(JSON,I);
+              AsObject[K] := CreateJSONPair.Parse(JSON,I);
               While (I<=L) and not (JSON[I] in [',','}']) DO INC(I);
               INC(I);
             until not((I<=L) and (I>1) and (JSON[I-1]=','));
@@ -445,7 +454,7 @@ begin
          begin
            INC(I);
            repeat
-             AsArray[count] := TJSONPair.Create.Parse(JSON,I); //TODO: fix empty array : "array" : [] =>  "array.count = 0"
+             AsArray[count] := CreateJSONPair.Parse(JSON,I); //TODO: fix empty array : "array" : [] =>  "array.count = 0"
              While (I<=L) and not (JSON[I] in [',',']']) DO INC(I);
              INC(I);
            until not((I<=L) and (I>1) and (JSON[I-1]=','));
@@ -519,22 +528,59 @@ begin
   Result := Parse(JSON,I);
 end;
 
+//procedure TJSONPair.SetAsArray(i: integer; const Value: TJSONPair);
+//begin
+//  if value = nil then
+//  begin
+//    if Assigned(FArray) then
+//    begin
+//      if (i < 0) then
+//        FArray.Delete(FArray.Count-1)
+//      else
+//      if (i < FArray.Count) then
+//         FArray.Delete(i);
+//    end;
+//    exit;
+//  end;
+//  if i < 0 then
+//    i := count;
+//  if Assigned(Value.owner) and (Value.owner <> self) and assigned(Value.owner.FArray) then
+//  begin
+//    value.Owner.FArray.Extract(Value);
+//  end;
+//  if (typeIs <> json_array) and (typeIs <> json_object) then
+//  begin
+//    Clear;
+//    typeIs := json_array;
+//  end;
+//  value.owner := self;
+//  value.name := IntToStr(i);
+//  while IsArray.Count < i do
+//    IsArray.add(TJSONPair.Create);
+//  if I = IsArray.Count then
+//    IsArray.Add(Value)
+//  else
+//    IsArray[i] := Value;
+//end;
+
 procedure TJSONPair.SetAsArray(i: integer; const Value: TJSONPair);
+var
+  index : Integer;
 begin
+  if (i < 0) or (i = MaxInt) then
+  begin
+    if Value = nil then
+       exit; //nop
+    i := count;
+  end
+  else
   if value = nil then
   begin
     if Assigned(FArray) then
-    begin
-      if (i < 0) then
-        FArray.Delete(FArray.Count-1)
-      else
-      if (i < FArray.Count) then
-         FArray.Delete(i);
-    end;
+      FArray.Delete(i);
     exit;
   end;
-  if i < 0 then
-    i := count;
+
   if Assigned(Value.owner) and (Value.owner <> self) and assigned(Value.owner.FArray) then
   begin
     value.Owner.FArray.Extract(Value);
@@ -542,17 +588,18 @@ begin
   if (typeIs <> json_array) and (typeIs <> json_object) then
   begin
     Clear;
-    typeIs := json_array;
   end;
+  typeIs := json_array;
   value.owner := self;
   value.name := IntToStr(i);
   while IsArray.Count < i do
-    IsArray.add(TJSONPair.Create);
+    IsArray.add(CreateJSONPair);
   if I = IsArray.Count then
     IsArray.Add(Value)
   else
     IsArray[i] := Value;
 end;
+
 
 procedure TJSONPair.SetAsBoolean(const Value: Boolean);
 begin

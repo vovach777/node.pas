@@ -99,7 +99,7 @@ var
    onSd : IEventHandler;
 begin
   loop.addTask;
-  inherited Create;
+  inherited Create();
   queue:= TQueue<TBaseHttpRequest>.Create;
   url.Parse(BaseURL);
   onSd := loop.once(ev_loop_shutdown,

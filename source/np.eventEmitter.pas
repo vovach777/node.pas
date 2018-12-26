@@ -48,7 +48,7 @@ type
     public
        type THandlerOperation = (hoAdd,hoRemove);
        var  onHandlerChange : TProc<integer,THandlerOperation>;
-       constructor Create();
+       constructor Create; reintroduce;
        function on_(id: integer; p: TProc_APointer) : IEventHandler; overload; inline;
        function on_(id: integer; p : Tproc) : IEventHandler; overload; inline;
        function once(id: integer; p : TProc) : IEventHandler; overload; inline;
@@ -225,7 +225,7 @@ begin
   end;
 end;
 
-constructor TEventEmitter.Create();
+constructor TEventEmitter.Create;
 begin
   inherited Create(nil);
   gc := TList< PLinked >.Create;
@@ -330,6 +330,8 @@ end;
 procedure TEventHandler.invoke(args: Pointer);
 var
   ref: IEventHandler;
+  proc0 : TProc;
+  proc1 : TProc_APointer;
 begin
   ref := self; //calling callback can destroy object by ref = 0. keep object alive while invoke
   if (id <> 0) and assigned(Proc) then
@@ -337,9 +339,15 @@ begin
 //      assert(assigned(qi.proc));
 //      assert(qi.id = eventId);
       if hasArg then
-         TProc_APointer(proc)(args)
+      begin
+         proc1 := TProc_APointer(proc);
+         proc1(args);
+      end
       else
-        proc();
+      begin
+        proc0 := proc;
+        proc0();
+      end;
       if once then
          remove;
   end;
@@ -347,7 +355,7 @@ end;
 
 procedure TEventHandler.remove;
 begin
-  if assigned(procQueue) and assigned(proc) and assigned(link) and (id <> 0) then
+  if assigned(procQueue) and assigned(proc) and assigned(link) and (link.id <> 0) then
      procQueue._remove(self);
 end;
 { TIEventEmitter }
@@ -361,7 +369,7 @@ end;
 constructor TIEventEmitter.Create;
 begin
   inherited;
-  FEventEmitter := TEventEmitter.Create;
+  FEventEmitter := TEventEmitter.Create();
 end;
 
 destructor TIEventEmitter.destroy;

@@ -310,7 +310,7 @@ interface
     procedure newThread(p: TProc; onJoin: TProc = nil);
     function setImmediate(p: Tproc): IQueueItem;
     function NextTick(p: Tproc): IQueueItem;
-    constructor Create();
+    constructor Create(); reintroduce;
 //    function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
 //    function _AddRef: Integer; stdcall;
 //    function _Release: Integer; stdcall;
@@ -1909,9 +1909,9 @@ end;
 constructor TNPTTY.Create(fd: integer);
 begin
   inherited Create(UV_TTY);
-   FTTY := puv_tty_t(FHandle);
-   duv_ok( uv_tty_init( loop.uvloop,FTTY,fd, 0) );
-   FActiveRef := self;
+  FTTY := puv_tty_t(FHandle);
+  duv_ok( uv_tty_init( loop.uvloop,FTTY,fd, 0) );
+  FActiveRef := self;
 end;
 
 destructor TNPTTY.Destroy;
