@@ -1,5 +1,5 @@
 program ex08_httpServer;
-
+{$DEFINE HTTPS}
 {$APPTYPE CONSOLE}
 
 {$R *.res}

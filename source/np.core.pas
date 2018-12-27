@@ -402,11 +402,7 @@ const
 //  this_eventHandler: IEventHandler;
 
 implementation
-
-const
-  FD_STDIN  = 0;
-  FD_STDOUT = 1;
-  FD_STDERR = 2;
+  uses windows;
 
 type
   P_tty_w_req = ^TNPTTY_w_req;
@@ -432,7 +428,7 @@ type
     procedure flush;
     procedure get_winsize(out width: integer; out height:integer);
   public
-    constructor Create(fd:integer=FD_STDOUT);
+    constructor Create(fd:integer=UV_STDOUT_FD);
     destructor Destroy; override;
   end;
 
@@ -446,6 +442,48 @@ type
      tv_stdout: INPTTY;
      tv_stderr: INPTTY;
      tv_stdin : INPStream;
+     {$IFDEF MSWINDOWS}
+
+       function uv_dup( fd: uv_os_fd_t) : uv_os_fd_t;
+       begin
+         result := INVALID_HANDLE_VALUE;
+         DuplicateHandle(GetCurrentProcess, fd, GetCurrentProcess, @result,0,FALSE, DUPLICATE_SAME_ACCESS);
+       end;
+     {$ENDIF}
+
+    function handle_tty(fd : uv_os_fd_t) : uv_os_fd_t;
+    begin
+      {$IFDEF MSWINDOWS}
+       case fd  of
+         UV_STDIN_FD:
+             exit( CreateFile('conin$',
+                           GENERIC_READ or GENERIC_WRITE,
+                           FILE_SHARE_READ or FILE_SHARE_WRITE,
+                           0,
+                           OPEN_EXISTING,
+                           FILE_ATTRIBUTE_NORMAL,
+                           0));
+         UV_STDOUT_FD:
+             exit( CreateFile('conout$',
+                           GENERIC_READ or GENERIC_WRITE,
+                           FILE_SHARE_READ or FILE_SHARE_WRITE,
+                           0,
+                           OPEN_EXISTING,
+                           FILE_ATTRIBUTE_NORMAL,
+                           0));
+         UV_STDERR_FD:
+             exit( CreateFile('conerr$',
+                           GENERIC_READ or GENERIC_WRITE,
+                           FILE_SHARE_READ or FILE_SHARE_WRITE,
+                           0,
+                           OPEN_EXISTING,
+                           FILE_ATTRIBUTE_NORMAL,
+                           0));
+       end;
+       {$ENDIF}
+       exit(fd);
+    end;
+
 
   function loop : TLoop;
   begin
@@ -1518,16 +1556,16 @@ begin
   inherited Create;
   HandleType := AHandleType;
   case  HandleType  of
-      UV_ASYNC         : typeLen := sizeof(uv_async_t);
-      UV_CHECK         : typeLen := sizeof(uv_check_t);
-      UV_IDLE          : typeLen := sizeof(uv_idle_t);
-      UV_NAMED_PIPE    : typeLen := sizeof(uv_pipe_t);
-      UV_PREPARE       : typeLen := sizeof(uv_prepare_t);
-      UV_STREAM        : typeLen := sizeof(uv_stream_t);
-      UV_TCP           : typeLen := sizeof(uv_tcp_t);
-      UV_TIMER         : typeLen := sizeof(uv_timer_t);
-      UV_PROCESS       : typeLen := sizeof(uv_process_t);
-      UV_TTY           : typeLen := sizeof(uv_tty_t);
+      UV_ASYNC         : typeLen := sizeof_async_t;
+      UV_CHECK         : typeLen := sizeof_check_t;
+      UV_IDLE          : typeLen := sizeof_idle_t;
+      UV_NAMED_PIPE    : typeLen := sizeof_pipe_t;
+      UV_PREPARE       : typeLen := sizeof_prepare_t;
+      UV_STREAM        : typeLen := sizeof_stream_t;
+      UV_TCP           : typeLen := sizeof_tcp_t;
+      UV_TIMER         : typeLen := sizeof_timer_t;
+      UV_PROCESS       : typeLen := sizeof_process_t;
+      UV_TTY           : typeLen := sizeof_tty_t;
       else
           assert(false, Format('type %d not supported',[ord(HandleType)]));
   end;
@@ -1910,7 +1948,9 @@ constructor TNPTTY.Create(fd: integer);
 begin
   inherited Create(UV_TTY);
   FTTY := puv_tty_t(FHandle);
-  duv_ok( uv_tty_init( loop.uvloop,FTTY,fd, 0) );
+
+
+  duv_ok( uv_tty_init( loop.uvloop,FTTY, handle_tty(fd), 0) );
   FActiveRef := self;
 end;
 
@@ -2002,7 +2042,7 @@ end;
 constructor TNPTTY_INPUT.Create(raw:Boolean);
 begin
   inherited Create(UV_TTY);
-   duv_ok( uv_tty_init( loop.uvloop,puv_tty_t(FHandle), 0, 1) );
+   duv_ok( uv_tty_init( loop.uvloop,puv_tty_t(FHandle), handle_tty(UV_STDIN_FD), 1) );
    if raw then
       uv_tty_set_mode(puv_tty_t(FHandle), UV_TTY_MODE_RAW);
    FActiveRef := self;
@@ -2150,14 +2190,20 @@ end;
   function stdOut : INPTTY;
   begin
     if not assigned(tv_stdOut) then
-     tv_stdOut := TNPTTY.Create(FD_STDOUT);
+    begin
+      tv_stdOut := TNPTTY.Create(UV_STDOUT_FD);
+    end;
     result := tv_stdOut;
   end;
 
   function stdErr : INPTTY;
+  var
+    fd : uv_os_fd_t;
   begin
     if not assigned(tv_stdErr) then
-     tv_stdErr := TNPTTY.Create(FD_STDERR);
+    begin
+       tv_stdErr := TNPTTY.Create(UV_STDERR_FD);
+    end;
     result := tv_stdErr;
   end;
 

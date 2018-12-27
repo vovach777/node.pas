@@ -4,16 +4,16 @@ interface
 const
 
 {$IFDEF WIN64}
-   LIBCRYPTO = 'libcrypto-1_1-x64.dll';
-   LIBSSL = 'libssl-1_1-x64.dll';
+   LIBCRYPTO = 'nodepaslib64.dll';
+   LIBSSL = 'nodepaslib64.dll';
 {$ENDIF}
 {$IFDEF WIN32}
-   LIBCRYPTO = 'libcrypto-1_1.dll';
-   LIBSSL = 'libssl-1_1.dll';
+   LIBCRYPTO = 'nodepaslib32.dll';
+   LIBSSL = 'nodepaslib32.dll';
 {$ENDIF}
 {$IFDEF LINUX64}
-   LIBCRYPTO = 'libcrypto.so.1.1';
-   LIBSSL = 'libssl.so.1.1';
+   LIBCRYPTO = 'nodepaslib.so';
+   LIBSSL = 'nodepaslib.so';
 {$ENDIF}
 
    SSL_VERIFY_NONE                 = 0;

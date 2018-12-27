@@ -98,87 +98,47 @@ const
 {$IFDEF WIN32}
 
 const
-  LIBFILE = 'libuv32.dll';
-  sizeof_loop_t = 256;
-  sizeof_async_t = 116;
-  sizeof_check_t = 60;
-  sizeof_fs_event_t = 140;
-  sizeof_fs_poll_t = 52;
-  sizeof_handle_t = 48;
-  sizeof_idle_t = 60;
-  sizeof_pipe_t = 320;
-  sizeof_poll_t = 256;
-  sizeof_prepare_t = 60;
-  sizeof_process_t = 136;
-  sizeof_stream_t = 144;
-  sizeof_tcp_t = 168;
-  sizeof_timer_t = 96;
-  sizeof_tty_t = 196;
-  sizeof_udp_t = 288;
-  sizeof_signal_t = 136;
-
-  sizeof_req_t = 60;
-  sizeof_connect_t = 68;
-  sizeof_write_t = 92;
-  sizeof_shutdown_t = 68;
-  sizeof_udp_send_t = 68;
-  sizeof_fs_t = 312;
-  sizeof_work_t = 92;
-  sizeof_addrinfo_t = 112;
-  sizeof_nameinfo_t = 1288;
-
-  sizeof_rwlock_t = 48;
-  sizeof_cond_t = 36;
-  sizeof_barrier_t = 40;
-  sizeof_sem_t = 4;
-  sizeof_mutex_t = 24;
-  sizeof_os_sock_t = 4;
-  sizeof_os_fd_t  = 4;
-
+  LIBFILE = 'nodepaslib32.dll';
+  {$Message Error 'only 64 bit windows support!'}
 
 {$ENDIF}
 
 {$IFDEF WIN64}
 
 const
-  LIBFILE = 'libuv64.dll';
+  LIBFILE = 'nodepaslib64.dll';
 
-  sizeof_loop_t = 464;
-  sizeof_async_t = 224;
-  sizeof_check_t = 120;
-  sizeof_fs_event_t = 272;
-  sizeof_fs_poll_t = 104;
-  sizeof_handle_t = 96;
-  sizeof_idle_t = 120;
-  sizeof_pipe_t = 576;
-  sizeof_poll_t = 416;
-  sizeof_prepare_t = 120;
-  sizeof_process_t = 264;
-  sizeof_stream_t = 272;
-  sizeof_tcp_t = 320;
-  sizeof_timer_t = 160;
-  sizeof_tty_t = 344;
-  sizeof_udp_t = 424;
-  sizeof_signal_t = 264;
 
-  sizeof_req_t = 112;
-  sizeof_connect_t = 128;
-  sizeof_write_t = 176;
-  sizeof_shutdown_t = 128;
-  sizeof_udp_send_t = 128;
-  sizeof_fs_t = 456;
-  sizeof_work_t = 176;
-  sizeof_addrinfo_t = 216;
-  sizeof_nameinfo_t = 1368;
-
-  sizeof_rwlock_t = 80;
-  sizeof_cond_t = 64;
-  sizeof_barrier_t = 64;
-//  sizeof_sem_t = 8;
-  sizeof_mutex_t = 40;
-//  sizeof_os_sock_t = 8;
-//  sizeof_os_fd_t  = 8;
-
+sizeof_loop_t = 512;
+sizeof_async_t = 96;
+sizeof_check_t = 88;
+sizeof_fs_event_t = 240;
+sizeof_fs_poll_t = 72;
+sizeof_handle_t = 64;
+sizeof_idle_t = 88;
+sizeof_pipe_t = 544;
+sizeof_poll_t = 384;
+sizeof_prepare_t = 88;
+sizeof_process_t = 232;
+sizeof_stream_t = 240;
+sizeof_tcp_t = 288;
+sizeof_timer_t = 120;
+sizeof_tty_t = 304;
+sizeof_udp_t = 392;
+sizeof_signal_t = 232;
+sizeof_req_t = 112;
+sizeof_connect_t = 128;
+sizeof_write_t = 176;
+sizeof_shutdown_t = 128;
+sizeof_udp_send_t = 128;
+sizeof_fs_t = 464;
+sizeof_work_t = 176;
+sizeof_addrinfo_t = 216;
+sizeof_nameinfo_t = 1368;
+sizeof_rwlock_t = 56;
+sizeof_cond_t = 8;
+sizeof_barrier_t = 64;
+sizeof_mutex_t = 40;
 
 {$ENDIF}
 
@@ -206,9 +166,7 @@ type
   uv_os_fd_t = THANDLE;
 
   uv_thread_t = THANDLE;
-
   uv_sem_t = THANDLE;
-
 
   uv_uid_t = Byte;
   uv_gid_t = Byte;
@@ -233,11 +191,21 @@ type
              false: ( len: size_t;
                       base: PByte; );
        end;
+const
+
+  sizeof_os_sock_t = sizeof(uv_os_sock_t);
+  sizeof_os_fd_t  = sizeof(uv_os_fd_t);
+
+UV_STDIN_FD  = uv_os_fd_t(-10);
+UV_STDOUT_FD = uv_os_fd_t(-11);
+UV_STDERR_FD = uv_os_fd_t(-12);
+
+
 {$ENDIF}
 
 {$IFDEF LINUX64}
  const
-  LIBFILE = 'libuv.so.1';
+  LIBFILE = 'nodepaslib.so';
   sizeof_loop_t = 848;
   sizeof_async_t = 128;
   sizeof_check_t = 120;
@@ -273,6 +241,12 @@ type
   sizeof_mutex_t = 40;
   //sizeof_os_sock_t = 4;
   //sizeof_os_fd_t  = 4;
+
+
+UV_STDIN_FD   = 0;
+UV_STDOUT_FD  = 1;
+UV_STDERR_FD  = 2;
+
 
  const
   _O_RDONLY = O_RDONLY;
@@ -1192,6 +1166,9 @@ type
     *)
     uid: uv_uid_t;
     gid: uv_gid_t;
+
+    cpumask : PAnsiChar;
+    cpumask_size : size_t;
   end;
 
   uv_process_options_t = uv_process_options_s;
