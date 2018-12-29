@@ -1,6 +1,9 @@
 #include "uv.h"
 
+//#define NP_API extern __declspec(dllexport)
 #define NP_API
+// __declspec(dllexport)
+//__declspec(dllexport)
 
 NP_API size_t uv_rwlock_size();
 NP_API size_t uv_cond_size();

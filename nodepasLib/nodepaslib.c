@@ -72,3 +72,47 @@ uv_req_type uv_get_req_type(uv_req_t* r) {
 NP_API int uv_get_process_pid(uv_process_t*h) {
    return (h->pid);
 }
+
+//NP_API uv_version_string_ = uv_version_string;
+/*
+  uv_exit_cb exit_cb;
+  const char* file;
+  char** args;
+  char** env;
+  const char* cwd;
+  unsigned int flags;
+  int stdio_count;
+  uv_stdio_container_t* stdio;
+  uv_uid_t uid;
+  uv_gid_t gid;
+  char* cpumask;
+  size_t cpumask_size;
+*/
+NP_API void uv_init_process_options(uv_process_options_t * po,
+                                    uv_exit_cb exit_cb,
+                                    const char* file,
+                                    char**args,
+                                    char** env,
+                                    const char * cwd,
+                                    unsigned int flags,
+                                    int stdio_count,
+                                    uv_stdio_container_t* stdio,
+                                    uv_uid_t uid,
+                                    uv_gid_t gid,
+                                    char* cpumask,
+                                    size_t cpumask_size) {
+
+   po->exit_cb = exit_cb;
+   po->file = file;
+   po->args = args;
+   po->env  = env;
+   po->cwd  = cwd;
+   po->flags = flags;
+   po->stdio_count = stdio_count;
+   po->stdio = stdio;
+   po->uid = uid;
+   po->gid = gid;
+   po->cpumask = cpumask;
+   po->cpumask_size = cpumask_size;
+}
+

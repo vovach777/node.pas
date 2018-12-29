@@ -25,7 +25,6 @@ begin
                             stdout.PrintLn(#27'[1;33m'+s+#27'[m');
                             if SameText(s,'exit') then
                                loop.terminate;
-
                           end);
         end);
     loopHere;
