@@ -1,7 +1,7 @@
 unit np.core;
 
 interface
-  uses np.winsock, sysutils,Classes, np.libuv, generics.collections, np.buffer,
+  uses np.common, np.winsock, sysutils,Classes, np.libuv, generics.collections, np.buffer,
       np.eventEmitter;
   type
 
@@ -402,7 +402,9 @@ const
 //  this_eventHandler: IEventHandler;
 
 implementation
+ {$IFDEF MSWINDOWS}
   uses windows;
+ {$ENDIF}
 
 type
   P_tty_w_req = ^TNPTTY_w_req;
@@ -2221,7 +2223,5 @@ end;
     result := tv_stdIn;
   end;
 
-
-
-
 end.
+

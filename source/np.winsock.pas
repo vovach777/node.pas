@@ -183,7 +183,7 @@ To deal with this, I use the FPC predefined FPC_REQUIRES_PROPER_ALIGNMENT.
 //{$ENDIF}
 
 uses
-  SysUtils, Windows;
+  SysUtils, Windows, np.common;
 
 type
   SIZE_T = NativeUint;
@@ -5122,9 +5122,6 @@ implementation
 //=============================================================
 
 {$IFDEF MSWINDOWS}
-
-uses ansiStrings;
-
 var
   hWinSockDll : THandle = 0; // WS2_32.DLL handle
   {$IFNDEF WINCE}
@@ -6728,7 +6725,7 @@ begin
     with snb^ do begin
       snb_family := AF_NETBIOS;
       snb_type := SnbType;
-      len := AnsiStrings.StrLen(Name);
+      len := CStrLen(Name);
       if len >= NETBIOS_NAME_LENGTH-1 then begin
         System.Move(Name^, snb_name, NETBIOS_NAME_LENGTH-1);
       end else begin

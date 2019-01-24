@@ -1,8 +1,8 @@
 unit np.HttpServer;
 
 interface
-  uses sysUtils, np.Core, np.httpParser, np.url, np.buildData, np.buffer,
-        np.HttpUt, np.OpenSSL, np.libuv;
+  uses sysUtils, np.common, np.Core, np.httpParser, np.url, np.buildData, np.buffer,
+        np.HttpUt, np.OpenSSL, np.libuv, np.ut;
 
   type
      IHttpRequest = interface
@@ -52,22 +52,26 @@ interface
      end;
 
 implementation
+  uses np.http_parser;
 
 type
      THttpClient = class(TNPTCPStream, IHttpClient, IHttpRequest, IHttpResponse)
-     type
-       TParseState = (psHeader,psBody,psProcess, psUpgrade);
+//     type
+//       TParseState = (psHeader,psBody,psProcess, psUpgrade);
      private
+        Fsettings : Thttp_parser_settings;
+        FParser: Thttp_parser;
+        Flast_header_name: string;
         FKeepAlive : Boolean;
-        Fstate : TParseState;
+//        Fstate : TParseState;
         FMethod : Utf8string;
         FUri : Utf8string;
-        FProtocol : Utf8string;
+//        FProtocol : Utf8string;
         FHeaders : THTTPHeader;
         FOnRequest : TProc;
         FBody : bufferRef;
         FResponse: TBuildData;
-        FBuf : BufferRef;
+//        FBuf : BufferRef;
         FTimeout: INPTimer;
         FTimeoutValue : int64;
         FSSL : TSSL;
@@ -79,8 +83,8 @@ type
         procedure writeHeader(code:Integer);
         procedure addHeader(const name: Utf8string; value: Utf8string);
         procedure finish(data: BufferRef);
-        function ProcessNext : Boolean;
-        procedure processBuf;
+//        function ProcessNext : Boolean;
+//        procedure processBuf;
         procedure setOnRequest(proc: TProc);
         procedure onClose; override;
         procedure do_handshake;
@@ -169,10 +173,129 @@ end;
 //   result := 1;
 //end;
 
+
+   function tos(const at:PAnsiChar; len: SiZE_t) : string;
+   begin
+      SetString(result,at,len);
+   end;
+
+
+   function on_message_begin( parser: PHttp_parser) : integer; cdecl;
+   begin
+     outputdebugStr('on_message_begin');
+     THttpClient(  parser.data ).FHeaders.Clear;
+     result := 0;
+   end;
+
+   function on_url(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+     outputdebugStr('on_url %s',[tos(at,len)]);
+     THttpClient(  parser.data ).FUri := tos(at,len);
+     result := 0;
+   end;
+
+   function on_status(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+     //request only
+     outputdebugStr('on_status %s', [tos(at,len)]);
+     result := 0;
+   end;
+
+   function on_header_field(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+   //  outputdebugStr('on_header_field "%s"', [tos(at,len)]);
+     THttpClient(  parser.data ).Flast_header_name := LowerCase( tos(at,len) );
+     result := 0;
+   end;
+
+   function on_header_value(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+    // outputdebugStr('on_header_value "%s"', [tos(at,len)]);
+     with THttpClient(  parser.data ) do
+     begin
+       outputdebugStr('| %s = %s',[ Flast_header_name, tos(at,len) ] );
+       FHeaders.addSubFields( Flast_header_name,  tos(at,len) );
+       Flast_header_name := '';
+     end;
+     result := 0;
+   end;
+
+   function on_headers_complete( parser: PHttp_parser) : integer; cdecl;
+   var
+     m : PAnsiChar;
+   begin
+      outputdebugStr('on_header_complete');
+     with THttpClient(  parser.data ) do
+     begin
+        m := http_method_str( http_parser_get_method(parser^));
+        FMethod := tos(m,   CStrLen( m  ) );
+     end;
+     result := 0;
+   end;
+
+   function on_body(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+     //outputdebugStr('on_body "%s"', [tos(at,len)]);
+     with THttpClient(  parser.data ) do
+     begin
+       FBody := Buffer.Create(Pointer(at),len);
+       OutputDebugStr('body chunk %d bytes/ %u',[len, FParser.content_length]);
+
+     end;
+     result := 0;
+   end;
+
+   function on_message_complete( parser: PHttp_parser) : integer; cdecl;
+   begin
+     outputdebugStr('on_message_complete');
+     with THttpClient(  parser.data ) do
+     begin
+        FKeepAlive := (http_should_keep_alive(FParser)<>0) and assigned(FOnRequest);
+        if assigned( FOnRequest ) then
+        begin
+           FOnRequest();
+           InitTimeout;
+        end
+        else
+        begin
+          do_shutdown;
+        end;
+      end;
+     result := 0;
+   end;
+
+   function on_chunk_header( parser: PHttp_parser) : integer; cdecl;
+   begin
+     outputdebugStr('on_chunk_header');
+     result := 0;
+   end;
+
+   function on_chunk_complete( parser: PHttp_parser) : integer; cdecl;
+   begin
+     outputdebugStr('on_chunk_complete');
+     result := 0;
+   end;
+
+
 constructor THttpClient.Create(server: INPTCPServer; Actx : TSSL_CTX);
 //var
 //  KEY_PASSWD : PAnsiChar;
 begin
+  http_parser_settings_init(FSettings);
+  FSettings.on_message_begin := on_message_begin;
+  FSettings.on_url := on_url;
+  FSettings.on_status := on_status;
+  FSettings.on_header_field := on_header_field;
+  FSettings.on_header_value := on_header_value;
+  FSettings.on_headers_complete := on_headers_complete;
+  FSettings.on_body := on_body;
+  FSettings.on_message_complete := on_message_complete;
+  FSettings.on_chunk_header := on_chunk_header;
+  FSettings.on_chunk_complete := on_chunk_complete;
+  http_parser_init( FParser, HTTP_REQUEST );
+  FParser.data := self;
+
+
   if assigned(Actx) then
   begin
     Fin_bio := BIO_new(BIO_s_mem());
@@ -189,12 +312,11 @@ begin
     do_handshake;
   end;
 
-  Fbuf := Buffer.Null;
   FHeaders := THTTPHeader.Create(Buffer.Null);
-  Fstate := psHeader;
+//  Fstate := psHeader;
   FTimeoutValue := (server as IHttpServer).Timeout;
   InitTimeout;
-   inherited CreateClient(server);
+  inherited CreateClient(server);
   if assigned(Actx) then
   begin
     setOnData(
@@ -219,9 +341,10 @@ begin
               nbytes := SSL_read(FSSL,@FSSLData[0],length(FSSLData));
               if nbytes <= 0 then
                 break;
-              optimized_append(FBuf, BufferRef.CreateWeakRef(@FSSLData[0],nbytes));
+              http_parser_execute(FParser,Fsettings,pAnsiChar( @FSSLData[0] ), nbytes);
+              //optimized_append(FBuf, BufferRef.CreateWeakRef(@FSSLData[0],nbytes));
             until false;
-            processBuf;
+            //processBuf;
           end;
         end;
         except
@@ -234,11 +357,19 @@ begin
     setOnData(
       procedure (data: PBufferRef)
       begin
-        optimized_append(FBuf, data^);
-        processBuf;
+        if assigned(data) and (data.length > 0) then
+          http_parser_execute(FParser,Fsettings,pAnsiChar( data.ref ), data.length);
+//        optimized_append(FBuf, data^);
+//        processBuf;
       end);
-
   end;
+  setOnEnd(
+     procedure
+     begin
+       if http_message_needs_eof(FParser) <> 0 then
+          http_parser_execute(FParser,Fsettings,nil,0);
+     end
+  );
 
 end;
 
@@ -326,10 +457,15 @@ var
  len,nbytes : integer;
  buf : BufferRef;
 begin
-  if FState = psProcess then
-  begin
+  http_parser_init( FParser, HTTP_REQUEST );
+//  http_parser_init( FParser, HTTP_REQUEST );
+//  if FState = psProcess then
+//  begin
     if FKeepAlive then
-      addHeader('Connection','keep-alive');
+      addHeader('Connection','keep-alive')
+    else
+      addHeader('Connection','close');
+
     addHeader('Content-Length',IntToStr(data.length));
     FResponse.append(#13#10);
     FResponse.append(data); //WriteBuffer(data.ref^,data.length);
@@ -360,14 +496,14 @@ begin
     end
     else
     begin
-      Fstate := psHeader;
-      setImmediate(
-        procedure
-        begin
-         processBuf;
-        end);
+//      Fstate := psHeader;
+//      setImmediate(
+//        procedure
+//        begin
+//         processBuf;
+//        end);
     end;
-  end;
+//  end;
 end;
 
 function THttpClient.GetReqBody: BufferRef;
@@ -418,61 +554,63 @@ begin
   inherited;
 end;
 
-procedure THttpClient.processBuf;
-begin
-   while ProcessNext do;
-end;
-
-function THttpClient.ProcessNext : Boolean;
-var
-  content : BufferRef;
-  headers : BufferRef;
-begin
-  result := false;
-  if FState = psUpgrade then
-  begin
-
-  end;
-
-  if FState = psProcess then
-    exit;
-
-    //check header
-    if FState = psHeader then
-    begin
-      if CheckHttpRequest(Fbuf,FMethod,FUri,FProtocol, headers, content) then
-      begin
-        FHeaders.clear;
-        FHeaders.parse(headers);
-        FState := psBody;
-        FBuf := content;
-        FKeepAlive := sameText( FHeaders.Fields['connection'], 'keep-alive');
-      end
-      else
-        exit;
-    end;
-    //check content
-    if Fstate = psBody then
-    begin
-      if Fbuf.length >= FHeaders.ContentLength  then
-      begin
-        FState := psProcess;
-        FBody := Fbuf.slice(0, FHeaders.ContentLength);
-        Fbuf.TrimL( FHeaders.ContentLength );
-        //now buffer rdy for new request, but we must wait process complete to reuse client object
-        if assigned( FOnRequest ) then
-        begin
-           FOnRequest();
-           InitTimeout;
-        end
-        else
-        begin
-          do_shutdown;
-        end;
-      end;
-    end;
-   result := (FState = psHeader) and (FBuf.length > 0);
-end;
+//procedure THttpClient.processBuf;
+//begin
+//   while ProcessNext do;
+//end;
+//
+//function THttpClient.ProcessNext : Boolean;
+//var
+//  content : BufferRef;
+//  headers : BufferRef;
+//begin
+//  result := false;
+////  if FState = psUpgrade then
+////  begin
+////
+////  end;
+//
+//  if FState = psProcess then
+//    exit;
+//
+//    //check header
+//    if FState = psHeader then
+//    begin
+//      if CheckHttpRequest(Fbuf,FMethod,FUri,FProtocol, headers, content) then
+//      begin
+//        FHeaders.clear;
+//        FHeaders.parse(headers);
+//        FState := psBody;
+//        FBuf := content;
+//        FKeepAlive := sameText( FHeaders.Fields['connection'], 'keep-alive');
+//        if http_should_keep_alive(FParser) <> 0 then
+//          OutputDebugStr('Keep-Alive!!!!!!!!');
+//      end
+//      else
+//        exit;
+//    end;
+//    //check content
+//    if Fstate = psBody then
+//    begin
+//      if Fbuf.length >= FHeaders.ContentLength  then
+//      begin
+//        FState := psProcess;
+//        FBody := Fbuf.slice(0, FHeaders.ContentLength);
+//        Fbuf.TrimL( FHeaders.ContentLength );
+//        //now buffer rdy for new request, but we must wait process complete to reuse client object
+//        if assigned( FOnRequest ) then
+//        begin
+//           FOnRequest();
+//           InitTimeout;
+//        end
+//        else
+//        begin
+//          do_shutdown;
+//        end;
+//      end;
+//    end;
+//   result := (FState = psHeader) and (FBuf.length > 0);
+//end;
 
 procedure THttpClient.setOnRequest(proc: TProc);
 begin
@@ -524,12 +662,7 @@ end;
 procedure THttpClient.writeHeader(code: Integer);
 begin
   FResponse.buf.length := 0;
-  FResponse.append(FProtocol);
-  FResponse.append(' ');
-  FResponse.append(IntToStr(code));
-  FResponse.append(' ');
-  FResponse.append(ResponseText(Code));
-  FResponse.append(#13#10);
+  FResponse.append( Format('HTTP/%d.%d %d %s'#13#10,[FParser.http_major,FParser.http_minor,code,ResponseText(Code)]));
 end;
 
 end.

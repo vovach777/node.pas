@@ -1,4 +1,5 @@
 #include "uv.h"
+#include "http_parser.h"
 
 //#define NP_API extern __declspec(dllexport)
 #define NP_API
@@ -23,3 +24,8 @@ NP_API void* uv_get_user_data(uv_handle_t* h);
 NP_API uv_req_type uv_get_req_type(uv_req_t* r);
 
 NP_API size_t uv_process_options_size();
+NP_API unsigned int http_parser_get_method(const http_parser * parser);
+NP_API unsigned int http_parser_get_status_code(const http_parser * parser);
+NP_API unsigned int http_parser_get_http_errno(const http_parser * parser);
+NP_API unsigned int http_parser_get_http_upgrade(const http_parser * parser);
+NP_API unsigned int http_parser_get_flags(const http_parser * parser);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "nodepaslib.h"
+#include "http_parser.h"
 
 /*
 size_t uv_tcp_accept_size() {
@@ -88,6 +89,7 @@ NP_API int uv_get_process_pid(uv_process_t*h) {
   char* cpumask;
   size_t cpumask_size;
 */
+
 NP_API void uv_init_process_options(uv_process_options_t * po,
                                     uv_exit_cb exit_cb,
                                     const char* file,
@@ -112,7 +114,29 @@ NP_API void uv_init_process_options(uv_process_options_t * po,
    po->stdio = stdio;
    po->uid = uid;
    po->gid = gid;
+#ifdef _WINDOWS
    po->cpumask = cpumask;
    po->cpumask_size = cpumask_size;
+#endif
 }
 
+
+unsigned int http_parser_get_method(const http_parser * parser) {
+   return parser->method;
+}
+
+unsigned int http_parser_get_status_code(const http_parser * parser) {
+   return parser->status_code;
+}
+
+unsigned int http_parser_get_http_errno(const http_parser * parser) {
+   return parser->http_errno;
+}
+
+unsigned int http_parser_get_http_upgrade(const http_parser * parser) {
+   return parser->upgrade;
+}
+
+unsigned int http_parser_get_flags(const http_parser * parser) {
+   return parser->flags;
+}

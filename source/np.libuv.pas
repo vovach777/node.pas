@@ -4,10 +4,10 @@ unit np.libuv;
 interface
 
 {$IFDEF MSWINDOWS}
-   uses windows, np.winsock, sysUtils;
+   uses np.common, windows, np.winsock, sysUtils;
 {$ENDIF}
 {$IFDEF LINUX}
-   uses SysUtils, Posix.Base,Posix.SysSocket, Posix.ArpaInet, Posix.NetinetIn, Posix.NetDB,
+   uses np.common, SysUtils, Posix.Base,Posix.SysSocket, Posix.ArpaInet, Posix.NetinetIn, Posix.NetDB,
         Posix.SysTypes, Posix.Semaphore, Posix.Fcntl, Posix.SysStat, Posix.SysUio;
 {$ENDIF}
 
@@ -15,11 +15,6 @@ interface
 //  type
 //    PUTF8Char = _^AnsiChar;
 //{$ENDIF}
-{$IFNDEF NEXTGEN}
-  type
-   pUtf8char = pansichar;
-{$ENDIF}
-
 
 const
   UV_EOF = -4095;
@@ -48,7 +43,7 @@ const
 
   type
 
-   EDUVException = class(Exception)
+   ENPException = class(Exception)
      errCode : integer;
      errName : string;
      constructor Create(err: integer);
@@ -83,8 +78,7 @@ const
     psockaddr_in6 = iocp.winsock2.psockaddr_in6;
   }
 
-  ULONG = Cardinal;
-  Long = Integer;
+
   uv_handle_type = (UV_UNKNOWN_HANDLE = 0, UV_ASYNC, UV_CHECK, UV_FS_EVENT_,
     UV_FS_POLL, UV_HANDLE, UV_IDLE, UV_NAMED_PIPE, UV_POLL, UV_PREPARE,
     UV_PROCESS, UV_STREAM, UV_TCP, UV_TIMER, UV_TTY, UV_UDP, UV_SIGNAL,
@@ -98,7 +92,7 @@ const
 {$IFDEF WIN32}
 
 const
-  LIBFILE = 'nodepaslib32.dll';
+  LIBFILE = NODEPAS_LIB;
   {$Message Error 'only 64 bit windows support!'}
 
 {$ENDIF}
@@ -106,7 +100,7 @@ const
 {$IFDEF WIN64}
 
 const
-  LIBFILE = 'nodepaslib64.dll';
+  LIBFILE = NODEPAS_LIB;
 
 
 sizeof_loop_t = 512;
@@ -205,7 +199,7 @@ UV_STDERR_FD = uv_os_fd_t(-12);
 
 {$IFDEF LINUX64}
  const
-  LIBFILE = 'nodepaslib.so';
+  LIBFILE = NODEPAS_LIB;
   sizeof_loop_t = 848;
   sizeof_async_t = 128;
   sizeof_check_t = 120;
@@ -1570,20 +1564,11 @@ function uv_now(loop: puv_loop_t) : uint64; cdecl;
 //procedure WakeupLoop(loop: puv_loop_t);
 //procedure uv_buf_set(var buf:uv_buf_t; base:PByte; len: Cardinal); cdecl;
 
-type
-  THex1 = 0..$F;
-  THex2 = $10..$FF;
-  THex3 = $100..$FFF;
-function h2o(h:THex1) : word; inline; overload;
-function h2o(h:THex2) : word; inline; overload;
-function h2o(h:THex3) : word; inline; overload;
-
 function duv_error(err:integer) : string;
 function IsIP(const ip: UTF8String) : integer;
 function IsIPv4(const ip: UTF8String) : Boolean; inline;
 function IsIPv6(const ip: UTF8String) : Boolean; inline;
 
-function CStrLen(const str: PAnsiChar) : integer;
 
 (*
                                                                         8
@@ -2135,19 +2120,6 @@ end;
 //    result := o1 or (o2 shl 3) or (o3 shl 6);
 //end;
 
-function h2o(h:THex1) : word;
-begin
-    result := h and 7;
-end;
-
-function h2o(h:THex2) : word;
-begin
-    result := (h and 7) or (h and $70 shr 1);
-end;
-function h2o(h:THex3) : word;
-begin
-    result := (h and 7) or (h and $70 shr 1) or (h and $700 shr 2);
-end;
 
   function duv_error(err:integer) : string;
   begin
@@ -2157,7 +2129,7 @@ end;
 
  { EDUVException }
 
-constructor EDUVException.Create(err: integer);
+constructor ENPException.Create(err: integer);
 begin
   errCode := err;
   errName := uv_err_name(err);
@@ -2167,7 +2139,7 @@ end;
 procedure duv_ok(res : integer);
 begin
   if res <> 0 then
-    raise EDUVException.Create(res);
+    raise ENPException.Create(res);
 end;
 
 
@@ -2205,19 +2177,6 @@ function IsIPv6(const ip: UTF8String) : Boolean; inline;
 begin
   result := IsIp(ip) = 6;
 end;
-
-function CStrLen(const str: PAnsiChar) : integer;
-var
-  ch : PAnsiChar;
-begin
-  if str = nil then
-    exit(0);
-  ch := Str;
-  while ch^ <> #0 do
-    inc(ch);
-  result := (ch-str);
-end;
-
 
 initialization
 

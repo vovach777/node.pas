@@ -1,19 +1,20 @@
 unit np.OpenSSL;
 
 interface
+  uses np.common;
 const
 
 {$IFDEF WIN64}
-   LIBCRYPTO = 'nodepaslib64.dll';
-   LIBSSL = 'nodepaslib64.dll';
+   LIBCRYPTO = NODEPAS_LIB;
+   LIBSSL =    NODEPAS_LIB;
 {$ENDIF}
 {$IFDEF WIN32}
-   LIBCRYPTO = 'nodepaslib32.dll';
-   LIBSSL = 'nodepaslib32.dll';
+   LIBCRYPTO = NODEPAS_LIB;
+   LIBSSL =    NODEPAS_LIB;
 {$ENDIF}
 {$IFDEF LINUX64}
-   LIBCRYPTO = 'nodepaslib.so';
-   LIBSSL = 'nodepaslib.so';
+   LIBCRYPTO = NODEPAS_LIB;
+   LIBSSL =    NODEPAS_LIB;
 {$ENDIF}
 
    SSL_VERIFY_NONE                 = 0;

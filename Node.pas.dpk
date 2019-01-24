@@ -49,6 +49,7 @@ contains
   np.json in 'source\np.json.pas',
   np.HttpConnect in 'source\np.HttpConnect.pas',
   np.eventEmitter in 'source\np.eventEmitter.pas',
-  np.http_parser in 'source\np.http_parser.pas';
+  np.http_parser in 'source\np.http_parser.pas',
+  np.common in 'source\np.common.pas';
 
 end.

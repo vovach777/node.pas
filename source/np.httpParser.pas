@@ -17,6 +17,7 @@ interface
        constructor Create(const ABuf: BufferRef);
        destructor Destroy; override;
        procedure addField(const key, value: Utf8String);
+       procedure addSubFields(const key,value : Utf8String);
        procedure Clear;
        function HasField(const AName: Utf8String): Boolean;
        property Fields[const AName: Utf8String]: Utf8String read GetFields; default;
@@ -151,66 +152,74 @@ end;
 
 procedure THTTPHeader.parse(ABuf: BufferRef);
 var
-  i,k : integer;
+  i : integer;
   tmp,line : BUfferREf;
   key,value: BufferRef;
-  pair: TPair<Utf8String,Utf8String>;
-  values, kv: TArray<Utf8String>;
   s : Utf8String;
 begin
   tmp := ABuf;
-  repeat
-  i := tmp.Find( bufCRLF );
-  if i < 0 then
+  while tmp.length > 0 do
   begin
-     line := tmp;
-     tmp := Buffer.Null;
-  end
-  else
-  begin
-    line := tmp.slice(0,i);
-    tmp.TrimL(i+2);
-  end;
+    i := tmp.Find( bufCRLF );
+    if i < 0 then
+    begin
+       line := tmp;
+       tmp := Buffer.Null;
+    end
+    else
+    begin
+      line := tmp.slice(0,i);
+      tmp.TrimL(i+2);
+    end;
 
-  for i := 0 to line.length-1 do
-  begin
-     if line.ref[i] <> ord(':') then
-       continue;
-     key := line.slice(0,i);
-     value := line.slice(i+1);
-     pair.Key := trim( LowerCase(  key.AsUtf8String ) );
-     pair.Value := trim(value.AsUtf8String);
-     if (pair.Key = 'date') or (pair.Key = 'expires') or (pair.Key='server') or (pair.key='cashe-control')
-        or (pair.Key = 'user-agent') then
-     begin
-        addField(pair.Key,pair.Value);
-        break;
-     end;
-     SplitString( pair.Value,values, [';',',',' ']);
-     if length(values) > 0 then
-     begin
-       if SplitString( values[0], kv,['='] ) = 1 then
-       begin
-          addField(pair.Key,trim(kv[0]));
-       end;
-         for k := 0 to length(values)-1 do
-         begin
-            SplitString( values[k], kv,['='] );
-            if (k=0) and (length(kv)=1) then
-               continue;
-            SetLength(kv,2);
-            kv[0] := LowerCase(trim(kv[0]));
-            addField(pair.Key+'.'+kv[0],trim(kv[1]));
-         end;
-     end;
-     break;
+    for i := 0 to line.length-1 do
+    begin
+       if line.ref[i] <> ord(':') then
+         continue;
+       key := line.slice(0,i);
+       value := line.slice(i+1);
+       AddSubFields( trim( LowerCase(  key.AsUtf8String ) ), trim(value.AsUtf8String) );
+       break;
+    end;
   end;
-  until tmp.length = 0;
   TryGetValue('content-type',ContentType);
   TryGetValue('content-type.charset', ContentCharset);
   if TryGetValue('content-length',s) and
     TryStrToInt64(s,ContentLength) then;
 end;
+
+procedure THttpHeader.addSubFields(const key,value : Utf8string);
+var
+  values, kv: TArray<Utf8String>;
+  k : integer;
+begin
+       if (key = 'date') or (Key = 'expires') or (Key='server') or (key='cashe-control')
+          or (Key = 'user-agent') then
+       begin
+          addField(Key,Value);
+       end
+       else
+       begin
+         SplitString( Value,values, [';',',',' ']);
+         if length(values) > 0 then
+         begin
+           if SplitString( values[0], kv,['='] ) = 1 then
+           begin
+              addField(key,trim(kv[0]));
+           end;
+             for k := 0 to length(values)-1 do
+             begin
+                SplitString( values[k], kv,['='] );
+                if (k=0) and (length(kv)=1) then
+                   continue;
+                SetLength(kv,2);
+                kv[0] := LowerCase(trim(kv[0]));
+                addField(key+'.'+kv[0],trim(kv[1]));
+             end;
+         end;
+       end;
+end;
+
 
 function THTTPHeader.ToString: string;
 var
