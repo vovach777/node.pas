@@ -1,27 +1,22 @@
 # node.pas
 Asynchronous Event-driven server applications framework
 
-dep: libuv, OpenSSL 1.1
-
-platforms: win64, linux64
+dep: libuv-v1.24.1, openssl-1.1.1a
+platforms: Win64, Linux64
 
 NodeJS-like ecosystem
 ---------------------   
 * Buffer
 * loop
-* setImmediate
-* nextTick
-* EventEmitter
-* setTimeout
-* setInterval
-* tcp
-* pipe
-* tty
+* setImmediate/nextTick
+* setTimeout/setInterval
+* tcp/pipe/tty
+* shared handled over pipes
 * child process
-* Http(s) server
+* Http(s) server/client
+* EventEmitter
 * Promises
 * JSON
-* Http(s) client
 
 There is no documentaion et. 
 You can study examples for basical usage.

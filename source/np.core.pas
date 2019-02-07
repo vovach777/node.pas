@@ -133,7 +133,9 @@ interface
     end;
 
     INPTCPServer = interface;
-    TOnTCPClient = reference to procedure(server: INPTCPServer); //duv.tcp.client.TNPTCPStream.CreateClient( Server : INPTCPServer );
+    INPPipe = interface;
+    TOnTCPClient = reference to procedure(server: INPTCPServer);
+    TOnPipeClient = reference to procedure(server: INPPipe);
 
     INPTCPServer = interface(INPHandle)
      ['{E20EB1A4-7A85-4C09-9FA5-FF821C68CEEE}']
@@ -149,8 +151,26 @@ interface
     end;
 
       INPPipe = interface(INPStream)
+      ['{D193DA9E-C554-4908-A819-004940022E33}']
         procedure connect(const AName: UTF8String);
+        procedure bind(const AName: UTF8String);
+        procedure open( fd : uv_file );
+        procedure accept(server: INPPipe);
         procedure setOnConnect(onConnect : TProc);
+        function getsockname : UTF8String;
+        function getpeername: UTF8String;
+        procedure set_pending_instances(acount: integer);
+        function get_pending_count : integer;
+        function get_pending_type  : uv_handle_type;
+        procedure set_chmod(flags: integer);
+        procedure setOnClient(OnClient : TOnPipeClient);
+//        procedure write2(send_handle: INPStream; cb : TProc);
+        procedure write2(const data: BufferRef; send_handle: INPStream; Acallback: TProc=nil); overload;
+        procedure write2(const data: UTF8String;send_handle: INPStream; Acallback: TProc=nil); overload;
+
+        procedure listen(backlog: integer=128);
+        property sockname : UTF8String read getsockname;
+        property peername : UTF8String read getpeername;
       end;
 
       INPSpawn = interface(INPHandle)
@@ -201,6 +221,9 @@ interface
          buf: uv_buf_t;
          callback: TProc;
          streamRef: INPHandle;
+//         {$IFDEF DEBUG}
+//         debugInfo: Integer;
+//         {$ENDIF}
       end;
      private
        __buf: TBytes;
@@ -225,8 +248,8 @@ interface
        procedure _onRead(data: Pbyte; nread: size_t);
        procedure _onEnd;
        procedure _onError(status: integer);
-       procedure writeInternal(data: PByte; len: Cardinal; ACallBack: TProc);
      protected
+       procedure writeInternal(data: PByte; len: Cardinal; ACallBack: TProc; send_handle: INPStream=nil);
        procedure __onError(status: integer);
        procedure setOnError(OnError: TProc<PNPError>);
        procedure setOnData(onData: TProc<PBufferRef>);
@@ -241,8 +264,7 @@ interface
        procedure write(const data:BufferRef; ACallBack: TProc = nil); overload;
        procedure write(const data : UTF8String; ACallBack: TProc = nil); overload;
        procedure shutdown(ACallBack: TProc);
-       procedure _listen(backlog:integer);
-//       procedure _accept(client : puv_stream_t);
+       procedure listen(backlog:integer);
        procedure read_start;
        procedure read_stop;
        function is_readable : Boolean;
@@ -271,7 +293,6 @@ interface
        FOnClient : TOnTCPClient;
     protected
        procedure setOnClient(AOnClient: TOnTCPClient);
-       procedure listen(backlog: integer);
        procedure _onConnection; override;
     end;
 
@@ -282,15 +303,33 @@ interface
     public
       constructor CreateClient( Server : INPTCPServer );
       constructor CreateConnect();
+      constructor CreateSocket( fd : uv_os_sock_t );
+      constructor CreateFromIPC( PipeIPC: INPPipe );
       destructor Destroy; override;
     end;
 
-      TNPPipe = class(TNPStream, INPPipe)
-      private
-        procedure connect(const AName: UTF8String);
-      public
-        constructor Create();
-      end;
+  TNPPipe = class(TNPStream, INPPipe)
+  private
+    FOnClient: TOnPipeClient;
+    procedure connect(const AName: UTF8String);
+    procedure bind(const AName: UTF8String);
+    function getsockname : UTF8String;
+    function getpeername: UTF8String;
+    procedure open( fd : uv_file );
+    procedure set_pending_instances(acount: integer);
+    function get_pending_count : integer;
+    function get_pending_type  : uv_handle_type;
+    procedure set_chmod(flags: integer);
+    procedure setOnClient(OnClient : TOnPipeClient);
+    procedure accept(server: INPPipe);
+    procedure write2(const data: BufferRef; send_handle: INPStream; Acallback: TProc=nil); overload;
+    procedure write2(const data: UTF8String;send_handle: INPStream; Acallback: TProc=nil); overload;
+  protected
+    procedure _onConnection; override;
+  public
+    constructor Create();
+    constructor CreateIPC();
+  end;
 
 
   TLoop = class(TEventEmitter)
@@ -323,7 +362,7 @@ interface
   end;
 
 
-  INPTTY = interface(INPHandle)
+  INPTTY = interface(INPStream)
     ['{FA890477-2F37-4A17-84B0-7A7C47994000}']
     procedure Print(const s: UTF8String);
     procedure PrintLn(const s: UTF8String);
@@ -393,13 +432,16 @@ interface
 
   procedure dns_resolve(const addr: UTF8String; const onResolved: TProc<integer,UTF8String>);
 
-
-
 const
   ev_loop_shutdown = 1;
   ev_loop_beforeTerminate = 2;
 //threadvar
 //  this_eventHandler: IEventHandler;
+
+{$IFDEF DEBUG}
+  threadvar
+    debugInfoValue : integer;
+{$ENDIF}
 
 implementation
  {$IFDEF MSWINDOWS}
@@ -636,7 +678,7 @@ begin
   loopThread := uv_thread_self;
   inherited Create();
   New(Fuvloop);
-  duv_ok( uv_loop_init(Fuvloop) );
+  np_ok( uv_loop_init(Fuvloop) );
   assert( assigned(Fuvloop));
   checkQueue := TProcQueue.Create;
   nextTickQueue := TProcQueue.Create;
@@ -747,7 +789,6 @@ end;
 procedure TLoop.run();
 begin
   try
-//      setImmediate(mainProc);
     repeat
       while nextTickQueue.emit do;
       if not checkQueue.isEmpty then
@@ -765,7 +806,7 @@ begin
     until (uv_loop_alive(uvloop) = 0) and (checkQueue.isEmpty);
     uv_walk(uvloop, @__cbWalk, nil);
     uv_run(uvloop, UV_RUN_DEFAULT);
-    duv_ok( uv_loop_close(uvloop) );
+    np_ok( uv_loop_close(uvloop) );
     check := nil;
     embededTasks := nil;
   finally
@@ -798,10 +839,9 @@ procedure TLoop.terminate;
 begin
   if not isTerminated then
   begin
-    emit(ev_Loop_beforeTerminate);
-
-    uv_stop(uvloop); //break run_default loop to check isTerminated
     isTerminated := true;
+    emit(ev_Loop_beforeTerminate);
+    uv_stop(uvloop); //break run_default loop to check isTerminated
   end;
 end;
 
@@ -903,8 +943,8 @@ end;
 constructor TNPCheck.Create(ACallBack: TProc);
 begin
     inherited Create(UV_CHECK, ACallBack);
-    duv_ok(uv_check_init(loop.uvloop , puv_check_t( Fhandle) ));
-    duv_ok(uv_check_start(puv_check_t(Fhandle), @__cb));
+    np_ok(uv_check_init(loop.uvloop , puv_check_t( Fhandle) ));
+    np_ok(uv_check_start(puv_check_t(Fhandle), @__cb));
     FActiveRef := self;
 end;
 
@@ -921,7 +961,7 @@ constructor TNPPrepare.Create(ACallBack: TProc);
 begin
     inherited Create(UV_PREPARE, ACallBack);
     uv_prepare_init(loop.uvloop, puv_prepare_t(Fhandle));
-    duv_ok(uv_prepare_start(puv_prepare_t(Fhandle), @__cb));
+    np_ok(uv_prepare_start(puv_prepare_t(Fhandle), @__cb));
     FActiveRef := self;
 end;
 
@@ -937,7 +977,7 @@ constructor TNPIdle.Create(ACallBack: TProc);
 begin
     inherited Create(UV_IDLE,ACallBack);
     uv_idle_init(loop.uvloop, puv_idle_t(FHandle));
-    duv_ok( uv_idle_start(puv_idle_t(FHandle), @__cb) );
+    np_ok( uv_idle_start(puv_idle_t(FHandle), @__cb) );
     FActiveRef := self;
 end;
 
@@ -974,7 +1014,7 @@ end;
 
 procedure TNPAsync.send;
 begin
-  duv_ok( uv_async_send(puv_async_t(FHandle)) );
+  np_ok( uv_async_send(puv_async_t(FHandle)) );
 end;
 
    type
@@ -1036,8 +1076,8 @@ end;
 constructor TNPTCPHandle.Create();
 begin
   inherited Create(UV_TCP);
-  duv_ok( uv_tcp_init(loop.uvloop, puv_tcp_t( FHandle )) );
-  FActiveRef := self;
+  np_ok( uv_tcp_init(loop.uvloop, puv_tcp_t( FHandle )) );
+  FActiveRef := self as INPHandle;
 end;
 
 procedure TNPTCPHandle.bind(const Aaddr: UTF8String; Aport: word);
@@ -1045,11 +1085,11 @@ var
   addr: Tsockaddr_in_any;
 begin
   try
-    duv_ok( uv_ip4_addr(PUTF8Char(Aaddr),APort,addr.ip4) );
+    np_ok( uv_ip4_addr(PUTF8Char(Aaddr),APort,addr.ip4) );
   except
-    duv_ok( uv_ip6_addr(PUTF8Char(Aaddr),APort,addr.ip6) );
+    np_ok( uv_ip6_addr(PUTF8Char(Aaddr),APort,addr.ip6) );
   end;
-  duv_ok( uv_tcp_bind(puv_tcp_t(FHandle),addr,0) );
+  np_ok( uv_tcp_bind(puv_tcp_t(FHandle),addr,0) );
 end;
 
 procedure TNPTCPHandle.bind6(const Aaddr: UTF8String; Aport: word;
@@ -1057,8 +1097,8 @@ procedure TNPTCPHandle.bind6(const Aaddr: UTF8String; Aport: word;
 var
   addr: Tsockaddr_in_any;
 begin
-  duv_ok( uv_ip6_addr(@Aaddr[1],APort,addr.ip6) );
-  duv_ok( uv_tcp_bind(puv_tcp_t(FHandle),addr,ord(tcp6Only)) );
+  np_ok( uv_ip6_addr(@Aaddr[1],APort,addr.ip6) );
+  np_ok( uv_tcp_bind(puv_tcp_t(FHandle),addr,ord(tcp6Only)) );
 end;
 
 function TNPTCPHandle.getpeername: string;
@@ -1075,16 +1115,16 @@ var
   nameBuf : array [0..128] of UTF8Char;
 begin
   len := sizeof(sa);
-  duv_ok( uv_tcp_getpeername(puv_tcp_t(FHandle),sa,len) );
+  np_ok( uv_tcp_getpeername(puv_tcp_t(FHandle),sa,len) );
   case sa.ip4.sin_family of
      UV_AF_INET:
         begin
-          duv_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
+          np_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
           name := UTF8String(PUTF8Char( @nameBuf ));
         end;
      UV_AF_INET6:
         begin
-          duv_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
+          np_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
           name := UTF8String(PUTF8Char( @nameBuf ));
         end;
       else
@@ -1107,16 +1147,16 @@ var
   nameBuf : array [0..128] of UTF8Char;
 begin
   len := sizeof(sa);
-  duv_ok( uv_tcp_getsockname(puv_tcp_t(FHandle),sa,len) );
+  np_ok( uv_tcp_getsockname(puv_tcp_t(FHandle),sa,len) );
   case sa.ip4.sin_family of
      UV_AF_INET:
         begin
-          duv_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
+          np_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
           name := UTF8String(PUTF8Char( @nameBuf ));
         end;
      UV_AF_INET6:
         begin
-          duv_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
+          np_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
           name := UTF8String(PUTF8Char( @nameBuf ));
         end;
       else
@@ -1127,25 +1167,25 @@ end;
 
 procedure TNPTCPHandle.set_keepalive(enable: Boolean; delay: cardinal);
 begin
-  duv_ok( uv_tcp_keepalive(puv_tcp_t( FHandle ),ord(enable),delay) );
+  np_ok( uv_tcp_keepalive(puv_tcp_t( FHandle ),ord(enable),delay) );
 end;
 
 procedure TNPTCPHandle.set_nodelay(enable: Boolean);
 begin
-  duv_ok( uv_tcp_nodelay(puv_tcp_t( FHandle ),ord(enable)) );
+  np_ok( uv_tcp_nodelay(puv_tcp_t( FHandle ),ord(enable)) );
 end;
 
 procedure TNPTCPHandle.set_simultaneous_accepts(enable: Boolean);
 begin
-  duv_ok( uv_tcp_simultaneous_accepts(puv_tcp_t( FHandle ),ord(enable)) );
+  np_ok( uv_tcp_simultaneous_accepts(puv_tcp_t( FHandle ),ord(enable)) );
 end;
 
 { TNPTCPServer }
 
-procedure TNPTCPServer.listen(backlog: integer);
-begin
-  _listen(backlog);
-end;
+//procedure TNPTCPServer.listen(backlog: integer);
+//begin
+//  _listen(backlog);
+//end;
 
 procedure TNPTCPServer.setOnClient(AOnClient: TOnTCPClient);
 begin
@@ -1154,7 +1194,8 @@ end;
 
 procedure TNPTCPServer._onConnection;
 begin
-  FOnClient(self);
+  if assigned(FOnClient) then
+    FOnClient(self);
 end;
 
 procedure __connect_cb(req: puv_connect_t; status: integer);cdecl;
@@ -1277,11 +1318,6 @@ end;
 
 { TNPStream }
 
-//procedure TNPStream._accept(client : puv_stream_t);
-//begin
-//   duv_ok( uv_accept(Fstream,client) );
-//end;
-
 constructor TNPStream.Create(AHandleType: uv_handle_type);
 begin
   assert( AHandleType in [UV_NAMED_PIPE, UV_TCP, UV_TTY] );
@@ -1294,12 +1330,12 @@ begin
   result := uv_is_writable(Fstream) <> 0;
 end;
 
-procedure TNPStream._listen(backlog: integer);
+procedure TNPStream.listen(backlog: integer);
 begin
   if not FListen then
   begin
     FListen := true;
-    duv_ok( uv_listen(Fstream,backlog,@__connection_cb) );
+    np_ok( uv_listen(Fstream,backlog,@__connection_cb) );
   end;
 end;
 
@@ -1358,9 +1394,16 @@ begin
     end;
   wd.callback := nil;
   wd.streamRef := nil;
-  assert( wd.buf.base <> nil );
-  assert( wd.buf.len > 0 );
-  FreeMem( wd.buf.base );
+//  if wd.debugInfo > 0 then
+//  begin
+//     sleep(0);
+//  end;
+
+  if (wd.buf.len > 0) then
+  begin
+      assert( wd.buf.base <> nil );
+      FreeMem( wd.buf.base );
+  end;
   dispose(wd);
 end;
 
@@ -1381,7 +1424,7 @@ procedure TNPStream.read_start;
 begin
   if not FRead then
   begin
-    duv_ok( uv_read_start(Fstream,@__alloc_cb,@__read_cb) );
+    np_ok( uv_read_start(Fstream,@__alloc_cb,@__read_cb) );
     FRead := true;
   end;
 end;
@@ -1390,7 +1433,7 @@ procedure TNPStream.read_stop;
 begin
   if FRead then
   begin
-    duv_ok( uv_read_stop(FStream));
+    np_ok( uv_read_stop(FStream));
     FRead := false;
     if FShutdown then
        Clear;
@@ -1436,7 +1479,7 @@ begin
       try
         FOnShutdown := ACallBack;
         uv_set_user_data(@FShutdownReq,self);
-        duv_ok( uv_shutdown(@FShutdownReq,FStream,@__shutdown_cb) );
+        np_ok( uv_shutdown(@FShutdownReq,FStream,@__shutdown_cb) );
         FShutdown := true;
         FShutdownRef := self;
       except
@@ -1451,7 +1494,7 @@ begin
   if not FConnect then
   begin
     uv_set_user_data(@FConnectReq, self);
-    duv_ok( uv_tcp_connect(@FConnectReq, puv_tcp_t(FHandle), @address, @__connect_cb) );
+    np_ok( uv_tcp_connect(@FConnectReq, puv_tcp_t(FHandle), @address, @__connect_cb) );
     FConnect := true;
     FConnectRef := self;
   end;
@@ -1474,7 +1517,7 @@ end;
 
 procedure TNPStream.pipe_bind(const name: UTF8String);
 begin
-  duv_ok( uv_pipe_bind(puv_pipe_t(FHandle),PUTF8Char(name)));
+  np_ok( uv_pipe_bind(puv_pipe_t(FHandle),PUTF8Char(name)));
 end;
 
 procedure TNPStream.pipe_connect(const name: UTF8String);
@@ -1482,11 +1525,12 @@ begin
   if not FConnect then
   begin
     FConnect := true;
+    uv_set_user_data(@FConnectReq, self);
     uv_pipe_connect(@FConnectReq,puv_pipe_t(FHandle), PUTF8Char(name),@__connect_cb);
   end;
 end;
 
-procedure TNPStream.writeInternal(data: PByte; len: Cardinal; ACallBack: TProc);
+procedure TNPStream.writeInternal(data: PByte; len: Cardinal; ACallBack: TProc; send_handle: INPStream=nil);
 var
   wd : PWriteData;
   status : integer;
@@ -1495,9 +1539,14 @@ begin
 //  begin
     new(wd);
     wd.callback := ACallBack;
+//    {$IFDEF DEBUG}
+//    wd.debugInfo := debugInfoValue;
+//    debugInfoValue := 0;
+//    {$ENDIF}
     uv_set_user_data(wd, self);
     if len > 0 then
     begin
+      assert(data <> nil);
       wd.buf.len := len;
       GetMem( wd.buf.base, len );
       move( data^, wd.buf.base^, len );
@@ -1508,7 +1557,10 @@ begin
       wd.buf.base := nil;
     end;
     wd.streamRef := self;
-    status := uv_write(puv_write_t(wd),FStream, @wd.buf, 1, @__write_cb);
+    if send_handle = nil then
+      status := uv_write(puv_write_t(wd),FStream, @wd.buf, 1, @__write_cb)
+    else
+      status := uv_write2(puv_write_t(wd),FStream, @wd.buf, 1, puv_stream_t( send_handle._uv_handle ), @__write_cb);
     if status <> 0 then
       _writecb(wd, status);
 //  end;
@@ -1581,6 +1633,8 @@ destructor TNPBaseHandle.Destroy;
 begin
   if assigned(Fhandle) then
   begin
+    if not is_closing then
+      uv_close( Fhandle, nil ); //constructor fail case!
     FreeMem(FHandle);
     FHandle := nil;
   end;
@@ -1594,7 +1648,7 @@ end;
 
 function TNPBaseHandle.is_closing: Boolean;
 begin
-  result := uv_is_closing(FHandle) <> 0;
+  result := not assigned( FHandle) or (uv_is_closing(FHandle) <> 0);
 end;
 
 procedure TNPBaseHandle.onClose;
@@ -1686,7 +1740,7 @@ begin
   FCallBack := ACallBack;
   inherited Create(UV_TIMER);
   uv_timer_init( loop.uvloop, puv_timer_t(FHandle) );
-  duv_ok( uv_timer_start(puv_timer_t(FHandle),@__cbTimer,Atimeout,Arepeat) );
+  np_ok( uv_timer_start(puv_timer_t(FHandle),@__cbTimer,Atimeout,Arepeat) );
   FActiveRef := self;
 end;
 
@@ -1741,12 +1795,12 @@ begin
   case IsIP(address) of
     4:
       begin
-        duv_ok( uv_ip4_addr(PUTF8Char(address),Port,addr.ip4) );
+        np_ok( uv_ip4_addr(PUTF8Char(address),Port,addr.ip4) );
         connect(addr);
       end;
     6:
       begin
-        duv_ok( uv_ip6_addr(PUTF8Char(address),Port,addr.ip6) );
+        np_ok( uv_ip6_addr(PUTF8Char(address),Port,addr.ip6) );
         connect(addr);
       end;
     else
@@ -1771,12 +1825,24 @@ end;
 constructor TNPTCPStream.CreateClient(Server: INPTCPServer);
 begin
    inherited Create();
-   duv_ok( uv_accept( puv_stream_t(Server._uv_handle), puv_stream_t(FHandle) ) );
+   np_ok( uv_accept( puv_stream_t(Server._uv_handle), puv_stream_t(FHandle) ) );
 end;
 
 constructor TNPTCPStream.CreateConnect();
 begin
    inherited Create();
+end;
+
+constructor TNPTCPStream.CreateFromIPC(PipeIPC: INPPipe);
+begin
+   inherited Create();
+   np_ok( uv_accept( puv_stream_t(PipeIPC._uv_handle), puv_stream_t(FHandle) ) );
+end;
+
+constructor TNPTCPStream.CreateSocket(fd: uv_os_sock_t);
+begin
+  inherited Create();
+  uv_tcp_open(puv_tcp_t( FHandle ),fd);
 end;
 
 destructor TNPTCPStream.Destroy;
@@ -1873,7 +1939,7 @@ end;
        req.addr := addr;
        req.onResolved := OnResolved;
        try
-         duv_ok( uv_getaddrinfo(loop.uvloop,@req.req,@__on_resolved, PAnsiChar( addr ), nil ,nil));
+         np_ok( uv_getaddrinfo(loop.uvloop,@req.req,@__on_resolved, PAnsiChar( addr ), nil ,nil));
        except
          req.onResolved := nil;
          dispose(req);
@@ -1885,6 +1951,16 @@ end;
 
 { TNPPipe }
 
+procedure TNPPipe.accept(server: INPPipe);
+begin
+   np_ok( uv_accept( puv_stream_t(Server._uv_handle), puv_stream_t(FHandle) ) );
+end;
+
+procedure TNPPipe.bind(const AName: UTF8String);
+begin
+   pipe_bind(AName);
+end;
+
 procedure TNPPipe.connect(const AName: UTF8String);
 begin
    pipe_connect(AName);
@@ -1893,12 +1969,92 @@ end;
 constructor TNPPipe.Create();
 begin
   inherited Create(UV_NAMED_PIPE);
-  duv_ok( uv_pipe_init(Loop.uvloop,puv_pipe_t(FHandle),0) );
+  np_ok( uv_pipe_init(Loop.uvloop,puv_pipe_t(FHandle),0) );
   FActiveRef := self;
 end;
 
+constructor TNPPipe.CreateIPC();
+begin
+  inherited Create(UV_NAMED_PIPE);
+  np_ok( uv_pipe_init(Loop.uvloop,puv_pipe_t(FHandle),1) );
+  FActiveRef := self;
+end;
 
-  type
+function TNPPipe.getpeername: UTF8String;
+var
+  len : size_t;
+begin
+   len := 1024;
+   SetLength(result, len );
+   np_ok( uv_pipe_getsockname( puv_pipe_t(FHandle), @result[1], len) );
+   if len < 1 then
+     raise ENPException.Create( UV_ENOBUFS );
+   setLength(result,len);
+end;
+
+function TNPPipe.getsockname: UTF8String;
+var
+  len : size_t;
+begin
+   len := 1024;
+   SetLength(result, len );
+   len := uv_pipe_getpeername( puv_pipe_t(FHandle), @result[1], len);
+   if len < 1 then
+     raise ENPException.Create( UV_ENOBUFS );
+   setLength(result,len);
+end;
+
+function TNPPipe.get_pending_count: integer;
+begin
+  result := uv_pipe_pending_count(puv_pipe_t(FHandle));
+end;
+
+function TNPPipe.get_pending_type: uv_handle_type;
+begin
+  result := uv_pipe_pending_type(puv_pipe_t(FHandle));
+end;
+
+procedure TNPPipe.open(fd: uv_file);
+begin
+  np_ok(uv_pipe_open(puv_pipe_t(FHandle), fd));
+end;
+
+procedure TNPPipe.setOnClient(OnClient: TOnPipeClient);
+begin
+  FOnClient := OnClient;
+end;
+
+procedure TNPPipe.set_chmod(flags: integer);
+begin
+   np_ok( uv_pipe_chmod( puv_pipe_t(FHandle), flags) );
+end;
+
+procedure TNPPipe.set_pending_instances(acount: integer);
+begin
+  uv_pipe_pending_instances(puv_pipe_t(FHandle),aCount);
+end;
+
+
+procedure TNPPipe.write2(const data: UTF8String; send_handle: INPStream; Acallback: TProc);
+begin
+  if length(data) > 0 then
+    writeInternal(@data[1],length(data), ACallBack, send_handle)
+  else
+    writeInternal(nil,0, ACallBack, send_handle)
+end;
+
+procedure TNPPipe.write2(const data: BufferRef; send_handle: INPStream; Acallback: TProc);
+begin
+  writeInternal(data.ref,data.length, ACallBack);
+end;
+
+procedure TNPPipe._onConnection;
+begin
+  if assigned(FOnClient) then
+    FOnClient(self)
+end;
+
+type
     PHandler = ^THandler;
     THandler = record
        execute: TProc;
@@ -1950,9 +2106,7 @@ constructor TNPTTY.Create(fd: integer);
 begin
   inherited Create(UV_TTY);
   FTTY := puv_tty_t(FHandle);
-
-
-  duv_ok( uv_tty_init( loop.uvloop,FTTY, handle_tty(fd), 0) );
+  np_ok( uv_tty_init( loop.uvloop,FTTY, handle_tty(fd), 0) );
   FActiveRef := self;
 end;
 
@@ -1974,10 +2128,10 @@ var
   wr: P_tty_w_req;
 begin
   wr := P_tty_w_req(req);
- if status < 0 then
- begin
+// if status < 0 then
+// begin
   //WriteLn('write_cb => "',uv_strerror( status ),'" msg:',wr.msg );
- end;
+// end;
   wr.msg := '';
   Dispose(wr);
 end;
@@ -1990,7 +2144,7 @@ end;
 
 procedure TNPTTY.get_winsize(out width, height: integer);
 begin
-  duv_ok( uv_tty_get_winsize(Ftty,width,height) );
+  np_ok( uv_tty_get_winsize(Ftty,width,height) );
   if (width = 0) or (height = 0)  then
   begin
     width  := 80;
@@ -2037,14 +2191,12 @@ begin
   endPrint;
 end;
 
-
-
 { TNPTTY_INPUT }
 
 constructor TNPTTY_INPUT.Create(raw:Boolean);
 begin
   inherited Create(UV_TTY);
-   duv_ok( uv_tty_init( loop.uvloop,puv_tty_t(FHandle), handle_tty(UV_STDIN_FD), 1) );
+   np_ok( uv_tty_init( loop.uvloop,puv_tty_t(FHandle), handle_tty(UV_STDIN_FD), 1) );
    if raw then
       uv_tty_set_mode(puv_tty_t(FHandle), UV_TTY_MODE_RAW);
    FActiveRef := self;
@@ -2061,7 +2213,6 @@ begin
 //  uv_close(puv_handle_t(process), nil);
 
 end;
-
 
 { TNPSpawn }
 
@@ -2113,14 +2264,13 @@ begin
   end
   else
     raise ERangeError.CreateFmt('Stdio num=%d!',[inx]);
-
 end;
 
 procedure TNPSpawn.kill(signnum: integer);
 begin
   if FSpawn then
   begin
-    duv_ok(uv_process_kill(@FProcess,signnum));
+    np_ok(uv_process_kill(@FProcess,signnum));
   end;
 end;
 
@@ -2173,7 +2323,7 @@ begin
   if FOptions.stdio_count > 0 then
      FOptions.stdio := @Fstdio;
 
-  duv_ok( uv_spawn(Loop.uvloop,FProcess,@FOptions) );
+  np_ok( uv_spawn(Loop.uvloop,FProcess,@FOptions) );
   FActiveRef := self;
 end;
 
@@ -2186,8 +2336,6 @@ begin
    end;
    Clear;
 end;
-
-
 
   function stdOut : INPTTY;
   begin

@@ -19,6 +19,7 @@ interface
 const
   UV_EOF = -4095;
   UV_ECANCELED = -4081;
+  UV_ENOBUFS = -4060;
   UV_DEFAULT_PORT = 0;
   {$IFDEF MSWINDOWS}
      UV_DEFAULT_BACKLOG = SOMAXCONN;
@@ -92,7 +93,7 @@ const
 {$IFDEF WIN32}
 
 const
-  LIBFILE = NODEPAS_LIB;
+  LIBUV_FILE = NODEPAS_LIB;
   {$Message Error 'only 64 bit windows support!'}
 
 {$ENDIF}
@@ -100,7 +101,7 @@ const
 {$IFDEF WIN64}
 
 const
-  LIBFILE = NODEPAS_LIB;
+  LIBUV_FILE = NODEPAS_LIB;
 
 
 sizeof_loop_t = 512;
@@ -164,6 +165,7 @@ type
 
   uv_uid_t = Byte;
   uv_gid_t = Byte;
+  uv_pid_t = integer;
 
   uv_lib_t = record
     handle: HMODULE;
@@ -199,7 +201,7 @@ UV_STDERR_FD = uv_os_fd_t(-12);
 
 {$IFDEF LINUX64}
  const
-  LIBFILE = NODEPAS_LIB;
+  LIBUV_FILE = NODEPAS_LIB;
   sizeof_loop_t = 848;
   sizeof_async_t = 128;
   sizeof_check_t = 120;
@@ -268,6 +270,7 @@ UV_STDERR_FD  = 2;
   uv_sem_t = sem_t;
   uv_uid_t = uid_t;
   uv_gid_t = gid_t;
+  uv_pid_t = pid_t;
   uv_lib_t = record
      handle : Pointer;
      errmsg : PAnsiChar;
@@ -772,7 +775,7 @@ function uv_send_buffer_size(handle: puv_handle_t; value: pinteger)
 function uv_recv_buffer_size(handle: puv_handle_t; value: pinteger)
   : Integer; cdecl;
 
-function uv_fileno(handle: puv_handle_t; fd: puv_os_fd_t): Integer; cdecl;
+function uv_fileno(handle: puv_handle_t; var fd: uv_os_fd_t): Integer; cdecl;
 
 function uv_buf_init(base: PByte; len: Cardinal): uv_buf_t;
 
@@ -951,10 +954,10 @@ function uv_pipe_bind(handle: puv_pipe_t; name: pUtf8char): Integer; cdecl;
 procedure uv_pipe_connect(req: puv_connect_t; handle: puv_pipe_t; name: pUtf8char;
   cb: uv_connect_cb); cdecl;
 
-function uv_pipe_getsockname(handle: puv_pipe_t; buffer: pUtf8char; size: psize_t)
+function uv_pipe_getsockname(handle: puv_pipe_t; buffer: pUtf8char; var size: size_t)
   : Integer; cdecl;
 
-function uv_pipe_getpeername(handle: puv_pipe_t; buffer: pUtf8char; size: psize_t)
+function uv_pipe_getpeername(handle: puv_pipe_t; buffer: pUtf8char; var size: size_t)
   : Integer; cdecl;
 
 procedure uv_pipe_pending_instances(handle: puv_pipe_t; count: Integer); cdecl;
@@ -962,6 +965,8 @@ procedure uv_pipe_pending_instances(handle: puv_pipe_t; count: Integer); cdecl;
 function uv_pipe_pending_count(handle: puv_pipe_t): Integer; cdecl;
 
 function uv_pipe_pending_type(handle: puv_pipe_t): uv_handle_type; cdecl;
+
+function uv_pipe_chmod(handle: puv_pipe_t; flags: integer) : integer; cdecl;
 
 type
 
@@ -1174,7 +1179,9 @@ function uv_spawn(loop: puv_loop_t; handle: puv_process_t;
 function uv_process_kill(process: puv_process_t; signum: Integer)
   : Integer; cdecl;
 
-function uv_kill(pid: Integer; signum: Integer): Integer; cdecl;
+function uv_process_getpid(process: puv_process_t) : uv_pid_t; cdecl;
+
+function uv_kill(pid: uv_pid_t; signum: Integer): Integer; cdecl;
 (*
   * uv_work_t is a subclass of uv_req_t.
 *)
@@ -1233,6 +1240,8 @@ function uv_os_tmpdir(buffer: PAnsiChar; size: psize_t): Integer; cdecl;
 function uv_os_get_passwd(pwd: puv_passwd_t): Integer; cdecl;
 
 procedure uv_os_free_passwd(pwd: puv_passwd_t); cdecl;
+
+function uv_os_getpid : uv_pid_t; cdecl;
 
 function uv_cpu_info(var cpu_infos: puv_cpu_info_t; var count: Integer)
   : Integer; cdecl;
@@ -1564,7 +1573,7 @@ function uv_now(loop: puv_loop_t) : uint64; cdecl;
 //procedure WakeupLoop(loop: puv_loop_t);
 //procedure uv_buf_set(var buf:uv_buf_t; base:PByte; len: Cardinal); cdecl;
 
-function duv_error(err:integer) : string;
+function np_error(err:integer) : string;
 function IsIP(const ip: UTF8String) : integer;
 function IsIPv4(const ip: UTF8String) : Boolean; inline;
 function IsIPv6(const ip: UTF8String) : Boolean; inline;
@@ -1584,476 +1593,482 @@ function IsIPv6(const ip: UTF8String) : Boolean; inline;
 
 *)
 
-procedure duv_ok(res : integer);
+procedure np_ok(res : integer);
 
 implementation
 
-function uv_version; external LIBFILE;
+function uv_version; external LIBUV_FILE;
 
-function uv_version_string; external LIBFILE;
+function uv_version_string; external LIBUV_FILE;
 
-function uv_replace_allocator; external LIBFILE;
+function uv_replace_allocator; external LIBUV_FILE;
 
-function uv_default_loop; external LIBFILE;
+function uv_default_loop; external LIBUV_FILE;
 
-function uv_loop_init; external LIBFILE;
+function uv_loop_init; external LIBUV_FILE;
 
-function uv_loop_close; external LIBFILE;
+function uv_loop_close; external LIBUV_FILE;
 
-function uv_loop_new; external LIBFILE;
+function uv_loop_new; external LIBUV_FILE;
 
-procedure uv_loop_delete; external LIBFILE;
+procedure uv_loop_delete; external LIBUV_FILE;
 
-function uv_loop_size; external LIBFILE;
+function uv_loop_size; external LIBUV_FILE;
 
-function uv_loop_alive; external LIBFILE;
+function uv_loop_alive; external LIBUV_FILE;
 
-function uv_loop_configure; external LIBFILE;
+function uv_loop_configure; external LIBUV_FILE;
 
-function uv_run; external LIBFILE;
+function uv_run; external LIBUV_FILE;
 
-procedure uv_stop; external LIBFILE;
+procedure uv_stop; external LIBUV_FILE;
 
-procedure uv_ref; external LIBFILE;
+procedure uv_ref; external LIBUV_FILE;
 
-procedure uv_unref; external LIBFILE;
+procedure uv_unref; external LIBUV_FILE;
 
-function uv_has_ref; external LIBFILE;
+function uv_has_ref; external LIBUV_FILE;
 
-procedure uv_update_time; external LIBFILE;
+procedure uv_update_time; external LIBUV_FILE;
 
-function uv_no; external LIBFILE;
+function uv_no; external LIBUV_FILE;
 
-function uv_backend_fd; external LIBFILE;
+function uv_backend_fd; external LIBUV_FILE;
 
-function uv_backend_timeout; external LIBFILE;
+function uv_backend_timeout; external LIBUV_FILE;
 
-function uv_strerror; external LIBFILE;
+function uv_strerror; external LIBUV_FILE;
 
-function uv_err_name; external LIBFILE;
+function uv_err_name; external LIBUV_FILE;
 
-function uv_shutdown; external LIBFILE;
+function uv_shutdown; external LIBUV_FILE;
 
-function uv_handle_size; external LIBFILE;
+function uv_handle_size; external LIBUV_FILE;
 
-function uv_req_size; external LIBFILE;
+function uv_req_size; external LIBUV_FILE;
 
-function uv_is_active; external LIBFILE;
+function uv_is_active; external LIBUV_FILE;
 
-procedure uv_walk; external LIBFILE;
+procedure uv_walk; external LIBUV_FILE;
 
-procedure uv_print_all_handles; external LIBFILE;
+procedure uv_print_all_handles; external LIBUV_FILE;
 
-procedure uv_print_active_handles; external LIBFILE;
+procedure uv_print_active_handles; external LIBUV_FILE;
 
-procedure uv_close; external LIBFILE;
+procedure uv_close; external LIBUV_FILE;
 
-function uv_send_buffer_size; external LIBFILE;
+function uv_send_buffer_size; external LIBUV_FILE;
 
-function uv_recv_buffer_size; external LIBFILE;
+function uv_recv_buffer_size; external LIBUV_FILE;
 
-function uv_fileno; external LIBFILE;
+function uv_fileno; external LIBUV_FILE;
 
-// function uv_buf_init; external LIBFILE;
+// function uv_buf_init; external LIBUV_FILE;
 
-function uv_listen; external LIBFILE;
+function uv_listen; external LIBUV_FILE;
 
-function uv_accept; external LIBFILE;
+function uv_accept; external LIBUV_FILE;
 
-function uv_read_start; external LIBFILE;
+function uv_read_start; external LIBUV_FILE;
 
-function uv_read_stop; external LIBFILE;
+function uv_read_stop; external LIBUV_FILE;
 
-function uv_write; external LIBFILE;
+function uv_write; external LIBUV_FILE;
 
-function uv_write2; external LIBFILE;
+function uv_write2; external LIBUV_FILE;
 
-function uv_try_write; external LIBFILE;
+function uv_try_write; external LIBUV_FILE;
 
-function uv_is_readable; external LIBFILE;
+function uv_is_readable; external LIBUV_FILE;
 
-function uv_is_writable; external LIBFILE;
+function uv_is_writable; external LIBUV_FILE;
 
-function uv_stream_set_blocking; external LIBFILE;
+function uv_stream_set_blocking; external LIBUV_FILE;
 
-function uv_is_closing; external LIBFILE;
+function uv_is_closing; external LIBUV_FILE;
 
-function uv_tcp_init; external LIBFILE;
+function uv_tcp_init; external LIBUV_FILE;
 
-function uv_tcp_init_ex; external LIBFILE;
+function uv_tcp_init_ex; external LIBUV_FILE;
 
-function uv_tcp_open; external LIBFILE;
+function uv_tcp_open; external LIBUV_FILE;
 
-function uv_tcp_nodelay; external LIBFILE;
+function uv_tcp_nodelay; external LIBUV_FILE;
 
-function uv_tcp_keepalive; external LIBFILE;
+function uv_tcp_keepalive; external LIBUV_FILE;
 
-function uv_tcp_simultaneous_accepts; external LIBFILE;
+function uv_tcp_simultaneous_accepts; external LIBUV_FILE;
 
-function uv_tcp_bind; external LIBFILE;
+function uv_tcp_bind; external LIBUV_FILE;
 
-function uv_tcp_getsockname; external LIBFILE;
+function uv_tcp_getsockname; external LIBUV_FILE;
 
-function uv_tcp_getpeername; external LIBFILE;
+function uv_tcp_getpeername; external LIBUV_FILE;
 
-function uv_tcp_connect; external LIBFILE;
-function uv_udp_init; external LIBFILE;
+function uv_tcp_connect; external LIBUV_FILE;
+function uv_udp_init; external LIBUV_FILE;
 
-function uv_udp_init_ex; external LIBFILE;
+function uv_udp_init_ex; external LIBUV_FILE;
 
-function uv_udp_open; external LIBFILE;
+function uv_udp_open; external LIBUV_FILE;
 
-function uv_udp_bind; external LIBFILE;
+function uv_udp_bind; external LIBUV_FILE;
 
-function uv_udp_getsockname; external LIBFILE;
+function uv_udp_getsockname; external LIBUV_FILE;
 
-function uv_udp_set_membership; external LIBFILE;
+function uv_udp_set_membership; external LIBUV_FILE;
 
-function uv_udp_set_multicast_loop; external LIBFILE;
+function uv_udp_set_multicast_loop; external LIBUV_FILE;
 
-function uv_udp_set_multicast_ttl; external LIBFILE;
+function uv_udp_set_multicast_ttl; external LIBUV_FILE;
 
-function uv_udp_set_multicast_interface; external LIBFILE;
+function uv_udp_set_multicast_interface; external LIBUV_FILE;
 
-function uv_udp_set_broadcast; external LIBFILE;
+function uv_udp_set_broadcast; external LIBUV_FILE;
 
-function uv_udp_set_ttl; external LIBFILE;
+function uv_udp_set_ttl; external LIBUV_FILE;
 
-function uv_udp_send; external LIBFILE;
+function uv_udp_send; external LIBUV_FILE;
 
-function uv_udp_try_send; external LIBFILE;
+function uv_udp_try_send; external LIBUV_FILE;
 
-function uv_udp_recv_start; external LIBFILE;
+function uv_udp_recv_start; external LIBUV_FILE;
 
-function uv_udp_recv_stop; external LIBFILE;
+function uv_udp_recv_stop; external LIBUV_FILE;
 
-function uv_tty_init; external LIBFILE;
+function uv_tty_init; external LIBUV_FILE;
 
-function uv_tty_set_mode; external LIBFILE;
+function uv_tty_set_mode; external LIBUV_FILE;
 
-function uv_tty_reset_mode; external LIBFILE;
+function uv_tty_reset_mode; external LIBUV_FILE;
 
-function uv_tty_get_winsize; external LIBFILE;
-function uv_guess_handle; external LIBFILE;
+function uv_tty_get_winsize; external LIBUV_FILE;
+function uv_guess_handle; external LIBUV_FILE;
 
-function uv_pipe_init; external LIBFILE;
+function uv_pipe_init; external LIBUV_FILE;
 
-function uv_pipe_open; external LIBFILE;
+function uv_pipe_open; external LIBUV_FILE;
 
-function uv_pipe_bind; external LIBFILE;
+function uv_pipe_bind; external LIBUV_FILE;
 
-procedure uv_pipe_connect; external LIBFILE;
+procedure uv_pipe_connect; external LIBUV_FILE;
 
-function uv_pipe_getsockname; external LIBFILE;
+function uv_pipe_getsockname; external LIBUV_FILE;
 
-function uv_pipe_getpeername; external LIBFILE;
+function uv_pipe_getpeername; external LIBUV_FILE;
 
-procedure uv_pipe_pending_instances; external LIBFILE;
+procedure uv_pipe_pending_instances; external LIBUV_FILE;
 
-function uv_pipe_pending_count; external LIBFILE;
+function uv_pipe_pending_count; external LIBUV_FILE;
 
-function uv_pipe_pending_type; external LIBFILE;
+function uv_pipe_pending_type; external LIBUV_FILE;
 
-function uv_poll_init; external LIBFILE;
+function uv_pipe_chmod; external LIBUV_FILE;
 
-function uv_poll_init_socket; external LIBFILE;
+function uv_poll_init; external LIBUV_FILE;
 
-function uv_poll_start; external LIBFILE;
+function uv_poll_init_socket; external LIBUV_FILE;
 
-function uv_poll_stop; external LIBFILE;
+function uv_poll_start; external LIBUV_FILE;
 
-function uv_prepare_init; external LIBFILE;
+function uv_poll_stop; external LIBUV_FILE;
 
-function uv_prepare_start; external LIBFILE;
+function uv_prepare_init; external LIBUV_FILE;
 
-function uv_prepare_stop; external LIBFILE;
+function uv_prepare_start; external LIBUV_FILE;
 
-function uv_check_init; external LIBFILE;
+function uv_prepare_stop; external LIBUV_FILE;
 
-function uv_check_start; external LIBFILE;
+function uv_check_init; external LIBUV_FILE;
 
-function uv_check_stop; external LIBFILE;
+function uv_check_start; external LIBUV_FILE;
 
-function uv_idle_init; external LIBFILE;
+function uv_check_stop; external LIBUV_FILE;
 
-function uv_idle_start; external LIBFILE;
+function uv_idle_init; external LIBUV_FILE;
 
-function uv_idle_stop; external LIBFILE;
+function uv_idle_start; external LIBUV_FILE;
 
-function uv_async_init; external LIBFILE;
+function uv_idle_stop; external LIBUV_FILE;
 
-function uv_async_send; external LIBFILE;
+function uv_async_init; external LIBUV_FILE;
 
-function uv_timer_init; external LIBFILE;
+function uv_async_send; external LIBUV_FILE;
 
-function uv_timer_start; external LIBFILE;
+function uv_timer_init; external LIBUV_FILE;
 
-function uv_timer_stop; external LIBFILE;
+function uv_timer_start; external LIBUV_FILE;
 
-function uv_timer_again; external LIBFILE;
+function uv_timer_stop; external LIBUV_FILE;
 
-procedure uv_timer_set_repeat; external LIBFILE;
+function uv_timer_again; external LIBUV_FILE;
 
-function uv_timer_get_repeat; external LIBFILE;
+procedure uv_timer_set_repeat; external LIBUV_FILE;
 
-function uv_getaddrinfo; external LIBFILE;
+function uv_timer_get_repeat; external LIBUV_FILE;
 
-procedure uv_freeaddrinfo; external LIBFILE;
+function uv_getaddrinfo; external LIBUV_FILE;
 
-function uv_getnameinfo; external LIBFILE;
+procedure uv_freeaddrinfo; external LIBUV_FILE;
 
-function uv_spawn; external LIBFILE;
+function uv_getnameinfo; external LIBUV_FILE;
 
-function uv_process_kill; external LIBFILE;
+function uv_spawn; external LIBUV_FILE;
 
-function uv_kill; external LIBFILE;
+function uv_process_kill; external LIBUV_FILE;
 
-function uv_queue_work; external LIBFILE;
+function uv_process_getpid; external LIBUV_FILE;
 
-function uv_cancel; external LIBFILE;
+function uv_kill; external LIBUV_FILE;
 
-function uv_setup_args; external LIBFILE;
+function uv_queue_work; external LIBUV_FILE;
 
-function uv_get_process_title; external LIBFILE;
+function uv_cancel; external LIBUV_FILE;
 
-function uv_set_process_title; external LIBFILE;
+function uv_setup_args; external LIBUV_FILE;
 
-function uv_resident_set_memory; external LIBFILE;
+function uv_get_process_title; external LIBUV_FILE;
 
-function uv_uptime; external LIBFILE;
+function uv_set_process_title; external LIBUV_FILE;
 
-function uv_getrusage; external LIBFILE;
+function uv_resident_set_memory; external LIBUV_FILE;
 
-function uv_os_homedir; external LIBFILE;
+function uv_uptime; external LIBUV_FILE;
 
-function uv_os_tmpdir; external LIBFILE;
+function uv_getrusage; external LIBUV_FILE;
 
-function uv_os_get_passwd; external LIBFILE;
+function uv_os_homedir; external LIBUV_FILE;
 
-procedure uv_os_free_passwd; external LIBFILE;
+function uv_os_tmpdir; external LIBUV_FILE;
 
-function uv_cpu_info; external LIBFILE;
+function uv_os_get_passwd; external LIBUV_FILE;
 
-procedure uv_free_cpu_info; external LIBFILE;
+procedure uv_os_free_passwd; external LIBUV_FILE;
 
-function uv_interface_addresses; external LIBFILE;
+function uv_os_getpid; external LIBUV_FILE;
 
-procedure uv_free_interface_addresses; external LIBFILE;
+function uv_cpu_info; external LIBUV_FILE;
 
-procedure uv_fs_req_cleanup; external LIBFILE;
+procedure uv_free_cpu_info; external LIBUV_FILE;
 
-function uv_fs_close; external LIBFILE;
+function uv_interface_addresses; external LIBUV_FILE;
 
-function uv_fs_open; external LIBFILE;
+procedure uv_free_interface_addresses; external LIBUV_FILE;
 
-function uv_fs_read; external LIBFILE;
+procedure uv_fs_req_cleanup; external LIBUV_FILE;
 
-function uv_fs_unlink; external LIBFILE;
+function uv_fs_close; external LIBUV_FILE;
 
-function uv_fs_write; external LIBFILE;
+function uv_fs_open; external LIBUV_FILE;
 
-function uv_fs_mkdir; external LIBFILE;
+function uv_fs_read; external LIBUV_FILE;
 
-function uv_fs_mkdtemp; external LIBFILE;
+function uv_fs_unlink; external LIBUV_FILE;
 
-function uv_fs_rmdir; external LIBFILE;
+function uv_fs_write; external LIBUV_FILE;
 
-function uv_fs_scandir; external LIBFILE;
+function uv_fs_mkdir; external LIBUV_FILE;
 
-function uv_fs_scandir_next; external LIBFILE;
+function uv_fs_mkdtemp; external LIBUV_FILE;
 
-function uv_fs_stat; external LIBFILE;
+function uv_fs_rmdir; external LIBUV_FILE;
 
-function uv_fs_fstat; external LIBFILE;
+function uv_fs_scandir; external LIBUV_FILE;
 
-function uv_fs_rename; external LIBFILE;
+function uv_fs_scandir_next; external LIBUV_FILE;
 
-function uv_fs_fsync; external LIBFILE;
+function uv_fs_stat; external LIBUV_FILE;
 
-function uv_fs_fdatasync; external LIBFILE;
+function uv_fs_fstat; external LIBUV_FILE;
 
-function uv_fs_ftruncate; external LIBFILE;
+function uv_fs_rename; external LIBUV_FILE;
 
-function uv_fs_sendfile; external LIBFILE;
+function uv_fs_fsync; external LIBUV_FILE;
 
-function uv_fs_access; external LIBFILE;
+function uv_fs_fdatasync; external LIBUV_FILE;
 
-function uv_fs_chmod; external LIBFILE;
+function uv_fs_ftruncate; external LIBUV_FILE;
 
-function uv_fs_utime; external LIBFILE;
+function uv_fs_sendfile; external LIBUV_FILE;
 
-function uv_fs_futime; external LIBFILE;
+function uv_fs_access; external LIBUV_FILE;
 
-function uv_fs_lstat; external LIBFILE;
+function uv_fs_chmod; external LIBUV_FILE;
 
-function uv_fs_link; external LIBFILE;
+function uv_fs_utime; external LIBUV_FILE;
 
-function uv_fs_symlink; external LIBFILE;
+function uv_fs_futime; external LIBUV_FILE;
 
-function uv_fs_readlink; external LIBFILE;
+function uv_fs_lstat; external LIBUV_FILE;
 
-function uv_fs_realpath; external LIBFILE;
+function uv_fs_link; external LIBUV_FILE;
 
-function uv_fs_fchmod; external LIBFILE;
+function uv_fs_symlink; external LIBUV_FILE;
 
-function uv_fs_chown; external LIBFILE;
+function uv_fs_readlink; external LIBUV_FILE;
 
-function uv_fs_fchown; external LIBFILE;
+function uv_fs_realpath; external LIBUV_FILE;
 
-function uv_fs_poll_init; external LIBFILE;
+function uv_fs_fchmod; external LIBUV_FILE;
 
-function uv_fs_poll_start; external LIBFILE;
+function uv_fs_chown; external LIBUV_FILE;
 
-function uv_fs_poll_stop; external LIBFILE;
+function uv_fs_fchown; external LIBUV_FILE;
 
-function uv_fs_poll_getpath; external LIBFILE;
+function uv_fs_poll_init; external LIBUV_FILE;
 
-function uv_signal_init; external LIBFILE;
+function uv_fs_poll_start; external LIBUV_FILE;
 
-function uv_signal_start; external LIBFILE;
+function uv_fs_poll_stop; external LIBUV_FILE;
 
-function uv_signal_stop; external LIBFILE;
+function uv_fs_poll_getpath; external LIBUV_FILE;
 
-procedure uv_loadavg; external LIBFILE;
+function uv_signal_init; external LIBUV_FILE;
 
-function uv_fs_event_init; external LIBFILE;
+function uv_signal_start; external LIBUV_FILE;
 
-function uv_fs_event_start; external LIBFILE;
+function uv_signal_stop; external LIBUV_FILE;
 
-function uv_fs_event_stop; external LIBFILE;
+procedure uv_loadavg; external LIBUV_FILE;
 
-function uv_fs_event_getpath; external LIBFILE;
+function uv_fs_event_init; external LIBUV_FILE;
 
-function uv_ip4_addr; external LIBFILE;
+function uv_fs_event_start; external LIBUV_FILE;
 
-function uv_ip6_addr; external LIBFILE;
+function uv_fs_event_stop; external LIBUV_FILE;
 
-function uv_ip4_name; external LIBFILE;
+function uv_fs_event_getpath; external LIBUV_FILE;
 
-function uv_ip6_name; external LIBFILE;
+function uv_ip4_addr; external LIBUV_FILE;
 
-function uv_inet_ntop; external LIBFILE;
+function uv_ip6_addr; external LIBUV_FILE;
 
-function uv_inet_pton; external LIBFILE;
+function uv_ip4_name; external LIBUV_FILE;
 
-function uv_exepath; external LIBFILE;
+function uv_ip6_name; external LIBUV_FILE;
 
-function uv_cwd; external LIBFILE;
+function uv_inet_ntop; external LIBUV_FILE;
 
-function uv_chdir; external LIBFILE;
+function uv_inet_pton; external LIBUV_FILE;
 
-function uv_get_free_memory; external LIBFILE;
+function uv_exepath; external LIBUV_FILE;
 
-function uv_get_total_memory; external LIBFILE;
+function uv_cwd; external LIBUV_FILE;
 
-function uv_hrtime; external LIBFILE;
+function uv_chdir; external LIBUV_FILE;
 
-procedure uv_disable_stdio_inheritance; external LIBFILE;
+function uv_get_free_memory; external LIBUV_FILE;
 
-function uv_dlopen; external LIBFILE;
+function uv_get_total_memory; external LIBUV_FILE;
 
-procedure uv_dlclose; external LIBFILE;
+function uv_hrtime; external LIBUV_FILE;
 
-function uv_dlsym; external LIBFILE;
+procedure uv_disable_stdio_inheritance; external LIBUV_FILE;
 
-function uv_dlerror; external LIBFILE;
+function uv_dlopen; external LIBUV_FILE;
 
-function uv_mutex_init; external LIBFILE;
+procedure uv_dlclose; external LIBUV_FILE;
 
-procedure uv_mutex_destroy; external LIBFILE;
+function uv_dlsym; external LIBUV_FILE;
 
-procedure uv_mutex_lock; external LIBFILE;
+function uv_dlerror; external LIBUV_FILE;
 
-function uv_mutex_trylock; external LIBFILE;
+function uv_mutex_init; external LIBUV_FILE;
 
-procedure uv_mutex_unlock; external LIBFILE;
+procedure uv_mutex_destroy; external LIBUV_FILE;
 
-function uv_rwlock_init; external LIBFILE;
+procedure uv_mutex_lock; external LIBUV_FILE;
 
-procedure uv_rwlock_destroy; external LIBFILE;
+function uv_mutex_trylock; external LIBUV_FILE;
 
-procedure uv_rwlock_rdlock; external LIBFILE;
+procedure uv_mutex_unlock; external LIBUV_FILE;
 
-function uv_rwlock_tryrdlock; external LIBFILE;
+function uv_rwlock_init; external LIBUV_FILE;
 
-procedure uv_rwlock_rdunlock; external LIBFILE;
+procedure uv_rwlock_destroy; external LIBUV_FILE;
 
-procedure uv_rwlock_wrlock; external LIBFILE;
+procedure uv_rwlock_rdlock; external LIBUV_FILE;
 
-function uv_rwlock_trywrlock; external LIBFILE;
+function uv_rwlock_tryrdlock; external LIBUV_FILE;
 
-procedure uv_rwlock_wrunlock; external LIBFILE;
+procedure uv_rwlock_rdunlock; external LIBUV_FILE;
 
-function uv_sem_init; external LIBFILE;
+procedure uv_rwlock_wrlock; external LIBUV_FILE;
 
-procedure uv_sem_destroy; external LIBFILE;
+function uv_rwlock_trywrlock; external LIBUV_FILE;
 
-procedure uv_sem_post; external LIBFILE;
+procedure uv_rwlock_wrunlock; external LIBUV_FILE;
 
-procedure uv_sem_wait; external LIBFILE;
+function uv_sem_init; external LIBUV_FILE;
 
-function uv_sem_trywait; external LIBFILE;
+procedure uv_sem_destroy; external LIBUV_FILE;
 
-function uv_cond_init; external LIBFILE;
+procedure uv_sem_post; external LIBUV_FILE;
 
-procedure uv_cond_destroy; external LIBFILE;
+procedure uv_sem_wait; external LIBUV_FILE;
 
-procedure uv_cond_signal; external LIBFILE;
+function uv_sem_trywait; external LIBUV_FILE;
 
-procedure uv_cond_broadcast; external LIBFILE;
+function uv_cond_init; external LIBUV_FILE;
 
-function uv_barrier_init; external LIBFILE;
+procedure uv_cond_destroy; external LIBUV_FILE;
 
-procedure uv_barrier_destroy; external LIBFILE;
+procedure uv_cond_signal; external LIBUV_FILE;
 
-function uv_barrier_wait; external LIBFILE;
+procedure uv_cond_broadcast; external LIBUV_FILE;
 
-procedure uv_cond_wait; external LIBFILE;
+function uv_barrier_init; external LIBUV_FILE;
 
-function uv_cond_timedwait; external LIBFILE;
+procedure uv_barrier_destroy; external LIBUV_FILE;
 
-procedure uv_once; external LIBFILE;
+function uv_barrier_wait; external LIBUV_FILE;
 
-function uv_key_create; external LIBFILE;
+procedure uv_cond_wait; external LIBUV_FILE;
 
-procedure uv_key_delete; external LIBFILE;
+function uv_cond_timedwait; external LIBUV_FILE;
 
-procedure uv_key_get; external LIBFILE;
+procedure uv_once; external LIBUV_FILE;
 
-procedure uv_key_set; external LIBFILE;
+function uv_key_create; external LIBUV_FILE;
 
-function uv_thread_create; external LIBFILE;
+procedure uv_key_delete; external LIBUV_FILE;
 
-function uv_thread_self; external LIBFILE;
+procedure uv_key_get; external LIBUV_FILE;
 
-function uv_thread_join; external LIBFILE;
+procedure uv_key_set; external LIBUV_FILE;
 
-function uv_thread_equal; external LIBFILE;
+function uv_thread_create; external LIBUV_FILE;
 
-function uv_rwlock_size; external LIBFILE;
-function uv_cond_size; external LIBFILE;
-function uv_barrier_size; external LIBFILE;
-function uv_sem_size; external LIBFILE;
-function uv_mutex_size; external LIBFILE;
-function uv_os_sock_size; external LIBFILE;
-function uv_os_fd_size; external LIBFILE;
-function uv_tcp_accept_size; external LIBFILE;
-function uv_pipe_accept_size; external LIBFILE;
-//function uv_buf_size; external LIBFILE;
-//function uv_process_options_size; external LIBFILE;
+function uv_thread_self; external LIBUV_FILE;
 
-procedure uv_set_close_cb; external LIBFILE;
-function uv_get_close_cb; external LIBFILE;
-function uv_get_handle_type; external LIBFILE;
-procedure uv_set_user_data; external LIBFILE;
-function uv_get_user_data; external LIBFILE;
-function uv_get_req_type; external LIBFILE;
+function uv_thread_join; external LIBUV_FILE;
 
-function uv_get_process_pid; external LIBFILE;
+function uv_thread_equal; external LIBUV_FILE;
 
-function uv_now; external LIBFILE;
+function uv_rwlock_size; external LIBUV_FILE;
+function uv_cond_size; external LIBUV_FILE;
+function uv_barrier_size; external LIBUV_FILE;
+function uv_sem_size; external LIBUV_FILE;
+function uv_mutex_size; external LIBUV_FILE;
+function uv_os_sock_size; external LIBUV_FILE;
+function uv_os_fd_size; external LIBUV_FILE;
+function uv_tcp_accept_size; external LIBUV_FILE;
+function uv_pipe_accept_size; external LIBUV_FILE;
+//function uv_buf_size; external LIBUV_FILE;
+//function uv_process_options_size; external LIBUV_FILE;
 
-//procedure uv_buf_set; external LIBFILE;
+procedure uv_set_close_cb; external LIBUV_FILE;
+function uv_get_close_cb; external LIBUV_FILE;
+function uv_get_handle_type; external LIBUV_FILE;
+procedure uv_set_user_data; external LIBUV_FILE;
+function uv_get_user_data; external LIBUV_FILE;
+function uv_get_req_type; external LIBUV_FILE;
+
+function uv_get_process_pid; external LIBUV_FILE;
+
+function uv_now; external LIBUV_FILE;
+
+//procedure uv_buf_set; external LIBUV_FILE;
 
 function uv_buf_init(base: PByte; len: Cardinal): uv_buf_t;
 begin
@@ -2121,7 +2136,7 @@ end;
 //end;
 
 
-  function duv_error(err:integer) : string;
+  function np_error(err:integer) : string;
   begin
      result := uv_err_name(err) + ' ('+  IntToStr(err) +') : '+ uv_strerror(err);
 
@@ -2136,7 +2151,7 @@ begin
   inherited Create( uv_strerror(err) );
 end;
 
-procedure duv_ok(res : integer);
+procedure np_ok(res : integer);
 begin
   if res <> 0 then
     raise ENPException.Create(res);

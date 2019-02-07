@@ -34,7 +34,7 @@
             <Dependencies/>
         </Projects>
         <Projects Include="samples\ex09_tcp_mt.dproj">
-            <Dependencies/>
+            <Dependencies>Node.pas.dproj</Dependencies>
         </Projects>
     </ItemGroup>
     <ProjectExtensions>
@@ -134,13 +134,13 @@
     <Target Name="CheckLib:Make">
         <MSBuild Projects="checkLib\CheckLib.dproj" Targets="Make"/>
     </Target>
-    <Target Name="ex09_tcp_mt">
+    <Target Name="ex09_tcp_mt" DependsOnTargets="Node.pas">
         <MSBuild Projects="samples\ex09_tcp_mt.dproj"/>
     </Target>
-    <Target Name="ex09_tcp_mt:Clean">
+    <Target Name="ex09_tcp_mt:Clean" DependsOnTargets="Node.pas:Clean">
         <MSBuild Projects="samples\ex09_tcp_mt.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="ex09_tcp_mt:Make">
+    <Target Name="ex09_tcp_mt:Make" DependsOnTargets="Node.pas:Make">
         <MSBuild Projects="samples\ex09_tcp_mt.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
@@ -160,14 +160,14 @@
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
-            <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
+        <BuildGroupProject Include="samples\ex05_thread.dproj">
+            <ProjectGuid>{CC366E82-CDB2-49E5-9CC8-E074E4347D6B}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex05_thread.dproj">
-            <ProjectGuid>{CC366E82-CDB2-49E5-9CC8-E074E4347D6B}</ProjectGuid>
+        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
+            <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>

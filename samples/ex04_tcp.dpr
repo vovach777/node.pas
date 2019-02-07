@@ -17,7 +17,6 @@ begin
         var
           server : INPTCPServer;
           connect: INPTCPConnect;
-          addr: TSockAddr_in_any;
         begin
           //echo server
           server := TNPTCPServer.Create();
@@ -48,8 +47,7 @@ begin
           server.unref;
           connect := TNPTCPStream.CreateConnect();
           connect.set_nodelay(true);
-          uv_ip4_addr('127.0.0.1',9999,addr.ip4 );
-          connect.connect(addr);
+          connect.connect( '127.0.0.1',9999 );
           connect.setOnConnect(
               procedure
               var
