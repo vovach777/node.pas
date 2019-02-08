@@ -1,62 +1,0 @@
-Embarcadero Delphi for Linux 64 bit compiler version 32.0
-Copyright (c) 1983,2017 Embarcadero Technologies, Inc.
-CheckLib.dpr(1) CheckLib.dpr(1) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) CheckLib.dpr(10) J:\node.pas\node.pas\source\np.libuv.pas(1) J:\node.pas\node.pas\source\np.common.pas(1) J:\node.pas\node.pas\source\np.common.pas(78) 
-J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(10) J:\node.pas\node.pas\source\np.libuv.pas(11) J:\node.pas\node.pas\source\np.libuv.pas(11) J:\node.pas\node.pas\source\np.libuv.pas(11) J:\node.pas\node.pas\source\np.libuv.pas(11) J:\node.pas\node.pas\source\np.libuv.pas(11) J:\node.pas\node.pas\source\np.libuv.pas(11) J:\node.pas\node.pas\source\np.libuv.pas(512) J:\node.pas\node.pas\source\np.libuv.pas(1024) J:\node.pas\node.pas\source\np.libuv.pas(1536) J:\node.pas\node.pas\source\np.libuv.pas(2048) J:\node.pas\node.pas\source\np.libuv.pas(2126) Warning: W1057 Implicit string cast from 'AnsiChar' to 'string'
-J:\node.pas\node.pas\source\np.libuv.pas(2135) Warning: W1057 Implicit string cast from 'AnsiChar' to 'string'
-J:\node.pas\node.pas\source\np.libuv.pas(2136) Warning: W1057 Implicit string cast from 'AnsiChar' to 'string'
-J:\node.pas\node.pas\source\np.libuv.pas(2189) 
-J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.winsock.pas(1) J:\node.pas\node.pas\source\np.winsock.pas(512) J:\node.pas\node.pas\source\np.winsock.pas(1024) J:\node.pas\node.pas\source\np.winsock.pas(1536) J:\node.pas\node.pas\source\np.winsock.pas(2048) J:\node.pas\node.pas\source\np.winsock.pas(2560) J:\node.pas\node.pas\source\np.winsock.pas(3072) J:\node.pas\node.pas\source\np.winsock.pas(3584) J:\node.pas\node.pas\source\np.winsock.pas(4096) J:\node.pas\node.pas\source\np.winsock.pas(4608) J:\node.pas\node.pas\source\np.winsock.pas(5120) J:\node.pas\node.pas\source\np.winsock.pas(5632) J:\node.pas\node.pas\source\np.winsock.pas(6144) J:\node.pas\node.pas\source\np.winsock.pas(6656) J:\node.pas\node.pas\source\np.winsock.pas(6771) 
-J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.core.pas(4) J:\node.pas\node.pas\source\np.buffer.pas(1) J:\node.pas\node.pas\source\np.buffer.pas(4) J:\node.pas\node.pas\source\np.ut.pas(1)     J:\node.pas\node.pas\source\np.ut.pas(5) J:\node.pas\node.pas\source\np.ut.pas(56) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(56) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(57) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(57) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(58) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(58) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(80) J:\node.pas\node.pas\source\np.ut.pas(80) J:\node.pas\node.pas\source\np.ut.pas(80) J:\node.pas\node.pas\source\np.ut.pas(80) J:\node.pas\node.pas\source\np.ut.pas(170) Warning: W1057 Implicit string cast from 'UTF8String' to 'string'
-J:\node.pas\node.pas\source\np.ut.pas(170) Warning: W1057 Implicit string cast from 'string' to 'UTF8String'
-J:\node.pas\node.pas\source\np.ut.pas(217) Warning: W1050 WideChar reduced to byte char in set expressions.  Consider using 'CharInSet' function in 'SysUtils' unit.
-J:\node.pas\node.pas\source\np.ut.pas(223) Warning: W1050 WideChar reduced to byte char in set expressions.  Consider using 'CharInSet' function in 'SysUtils' unit.
-J:\node.pas\node.pas\source\np.ut.pas(512) J:\node.pas\node.pas\source\np.ut.pas(569) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(569) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(579) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(579) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(612) Warning: W1057 Implicit string cast from 'string' to 'UTF8String'
-J:\node.pas\node.pas\source\np.ut.pas(621) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(621) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(627) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(627) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(628) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(628) Warning: W1000 Symbol 'TSysCharSet' is deprecated
-J:\node.pas\node.pas\source\np.ut.pas(639) Warning: W1050 WideChar reduced to byte char in set expressions.  Consider using 'CharInSet' function in 'SysUtils' unit.
-J:\node.pas\node.pas\source\np.ut.pas(645) Warning: W1050 WideChar reduced to byte char in set expressions.  Consider using 'CharInSet' function in 'SysUtils' unit.
-J:\node.pas\node.pas\source\np.ut.pas(647) Warning: W1050 WideChar reduced to byte char in set expressions.  Consider using 'CharInSet' function in 'SysUtils' unit.
-J:\node.pas\node.pas\source\np.ut.pas(1013) 
-J:\node.pas\node.pas\source\np.buffer.pas(4) J:\node.pas\node.pas\source\np.buffer.pas(4) J:\node.pas\node.pas\source\np.NetEncoding.pas(1) J:\node.pas\node.pas\source\np.NetEncoding.pas(14) J:\node.pas\node.pas\source\np.NetEncoding.pas(14) J:\node.pas\node.pas\source\np.NetEncoding.pas(142) J:\node.pas\node.pas\source\np.NetEncoding.pas(362) Warning: W1073 Combining signed type and unsigned 64-bit type - treated as an unsigned type
-J:\node.pas\node.pas\source\np.NetEncoding.pas(512) J:\node.pas\node.pas\source\np.NetEncoding.pas(992) 
-J:\node.pas\node.pas\source\np.buffer.pas(65) J:\node.pas\node.pas\source\np.buffer.pas(65) J:\node.pas\node.pas\source\np.buffer.pas(500) 
-J:\node.pas\node.pas\source\np.core.pas(5) J:\node.pas\node.pas\source\np.eventEmitter.pas(1) J:\node.pas\node.pas\source\np.eventEmitter.pas(3) J:\node.pas\node.pas\source\np.eventEmitter.pas(3) J:\node.pas\node.pas\source\np.eventEmitter.pas(3) J:\node.pas\node.pas\source\np.eventEmitter.pas(80) Hint: H2365 Override method TIEventEmitter.destroy should match case of ancestor TObject.Destroy
-J:\node.pas\node.pas\source\np.eventEmitter.pas(236) Hint: H2164 Variable 'tmp' is declared but never used in 'TEventEmitter.Destroy'
-J:\node.pas\node.pas\source\np.eventEmitter.pas(237) Hint: H2164 Variable 'i' is declared but never used in 'TEventEmitter.Destroy'
-J:\node.pas\node.pas\source\np.eventEmitter.pas(249) Hint: H2164 Variable 'qi' is declared but never used in 'TEventEmitter.emit'
-J:\node.pas\node.pas\source\np.eventEmitter.pas(250) Hint: H2164 Variable 'i' is declared but never used in 'TEventEmitter.emit'
-J:\node.pas\node.pas\source\np.eventEmitter.pas(424) 
-J:\node.pas\node.pas\source\np.core.pas(5) J:\node.pas\node.pas\source\np.core.pas(26) Hint: H2269 Overriding virtual method 'TQueueItem.Destroy' has lower visibility (private) than base class 'TInterfacedObject' (protected)
-J:\node.pas\node.pas\source\np.core.pas(512) J:\node.pas\node.pas\source\np.core.pas(731) Hint: H2077 Value assigned to 'ht' never used
-J:\node.pas\node.pas\source\np.core.pas(772) Hint: H2593 Code has no effect. Compiler generated temporary variable is cleared instead
-J:\node.pas\node.pas\source\np.core.pas(1024) J:\node.pas\node.pas\source\np.core.pas(1083) Warning: W1057 Implicit string cast from 'UTF8String' to 'string'
-J:\node.pas\node.pas\source\np.core.pas(1088) Warning: W1057 Implicit string cast from 'UTF8String' to 'string'
-J:\node.pas\node.pas\source\np.core.pas(1115) Warning: W1057 Implicit string cast from 'UTF8String' to 'string'
-J:\node.pas\node.pas\source\np.core.pas(1120) Warning: W1057 Implicit string cast from 'UTF8String' to 'string'
-J:\node.pas\node.pas\source\np.core.pas(1536) J:\node.pas\node.pas\source\np.core.pas(1574) Warning: W1036 Variable 'typeLen' might not have been initialized
-J:\node.pas\node.pas\source\np.core.pas(1873) Warning: W1057 Implicit string cast from 'UTF8String' to 'string'
-J:\node.pas\node.pas\source\np.core.pas(2004) Warning: W1057 Implicit string cast from 'string' to 'UTF8String'
-J:\node.pas\node.pas\source\np.core.pas(2014) Warning: W1057 Implicit string cast from 'string' to 'UTF8String'
-J:\node.pas\node.pas\source\np.core.pas(2019) Warning: W1057 Implicit string cast from 'string' to 'UTF8String'
-J:\node.pas\node.pas\source\np.core.pas(2048) J:\node.pas\node.pas\source\np.core.pas(2093) Warning: W1057 Implicit string cast from 'UTF8String' to 'string'
-J:\node.pas\node.pas\source\np.core.pas(2130) Warning: W1057 Implicit string cast from 'string' to 'UTF8String'
-J:\node.pas\node.pas\source\np.core.pas(2158) Warning: W1057 Implicit string cast from 'string' to 'UTF8String'
-J:\node.pas\node.pas\source\np.core.pas(2203) Hint: H2164 Variable 'fd' is declared but never used in 'stdErr'
-J:\node.pas\node.pas\source\np.core.pas(2228) 
-CheckLib.dpr(126) 
-Linker command line: "C:\Program Files (x86)\Embarcadero\Studio\19.0\bin\ld-linux.exe" -o CheckLib -e _ZN8Checklib14initializationEv --gc-sections --dynamic-list CheckLib.exp -z relro --build-id --eh-frame-hdr -m elf_x86_64 --dynamic-linker /lib64/ld-linux-x86-64.so.2 -s --sysroot J:\\lib -L J:\\lib -L . -L "c:\\program files (x86)\\embarcadero\\studio\\19.0\\lib\\linux64\\release" -L "C:\\Program Files (x86)\\Embarcadero\\Studio\\19.0\\Redist\\linux64" @CheckLib.lnk -lgcc_s -lrtlhelper_PIC -lc -ldl -lpthread -lm -lc_nonshared -rpath $ORIGIN
-14330 lines, 1.12 seconds.
