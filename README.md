@@ -11,7 +11,7 @@ NodeJS-like ecosystem
 * setImmediate/nextTick
 * setTimeout/setInterval
 * tcp/pipe/tty
-* shared handled over pipes
+* shared handle over pipes
 * child process
 * Http(s) server/client
 * EventEmitter

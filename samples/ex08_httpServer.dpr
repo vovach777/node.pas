@@ -9,7 +9,8 @@ uses
   np.core,
   np.HttpServer,
   np.Buffer,
-  np.JSON;
+  np.JSON,
+  np.URL;
 
   procedure main(const addr: string; port: word);
   var
@@ -28,7 +29,21 @@ uses
          msg : string;
          s : Utf8String;
          json : TJSONPair;
+         url: TURL;
+         i : integer;
+         body_s : string;
        begin
+         url.Parse( req.Path );
+         for i := 0 to length(url.Params)-1 do
+         begin
+            if (url.Params[i].Name = 'body') and (req.Body.length > 0) then
+            begin
+
+               body_s := Format('<h2>Body</h2><pre>%s</pre><hr>',[req.Body.AsUtf8String]);
+               break;
+            end;
+         end;
+
           if SameText( req.Path, '/json') then
           begin
             resp.writeHeader(200);
@@ -79,7 +94,7 @@ uses
                       'table { border-collapse: collapse;}'+
                       'td { border: 1px solid black; padding: 0 5px 0 5px;}'+
                       '</style>'+
-                   '<h1>%s, %s!</h1><p>PATH: %s</p><h2>Request headers</h2><pre>%s</pre><hr>'+
+                   '<h1>%s, %s!</h1><p>PATH: %s</p><h2>Request headers</h2><pre>%s</pre><hr>%s'+
                 '<table>'+
                    '<tr>'+
                       '<th>Operation</th>'+
@@ -101,7 +116,7 @@ uses
                       [
                       msg,
                       (req as INPTCPStream).getpeername,
-                      req.Path, req.Headers.ToString]))
+                      req.Path, req.Headers.ToString, Body_s]))
           );
        end );
   end;

@@ -69,7 +69,7 @@ type
 //        FProtocol : Utf8string;
         FHeaders : THTTPHeader;
         FOnRequest : TProc;
-        FBody : bufferRef;
+        FBody : BufferRef;
         FResponse: TBuildData;
 //        FBuf : BufferRef;
         FTimeout: INPTimer;
@@ -184,6 +184,7 @@ end;
    begin
      outputdebugStr('on_message_begin');
      THttpClient(  parser.data ).FHeaders.Clear;
+     THttpClient(  parser.data ).FBody := Buffer.Null;
      result := 0;
    end;
 
@@ -238,9 +239,8 @@ end;
      //outputdebugStr('on_body "%s"', [tos(at,len)]);
      with THttpClient(  parser.data ) do
      begin
-       FBody := Buffer.Create(Pointer(at),len);
-       OutputDebugStr('body chunk %d bytes/ %u',[len, FParser.content_length]);
-
+       optimized_append(FBody, BufferRef.CreateWeakRef(at,len) );
+       OutputDebugStr('body chunk %d bytes/ %u/ %u',[len, FParser.content_length,FBody.length]);
      end;
      result := 0;
    end;
