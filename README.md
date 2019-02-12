@@ -2,7 +2,7 @@
 Asynchronous Event-driven server applications framework
 
 dep: libuv-v1.24.1, openssl-1.1.1a
-platforms: Win64, Linux64
+platforms: Win32, Win64, Linux64
 
 NodeJS-like ecosystem
 ---------------------   
