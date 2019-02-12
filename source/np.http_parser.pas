@@ -4,13 +4,7 @@ interface
   uses np.common;
 
 const
- {$IFDEF WIN64}
   HTTP_PARSER_LIB = NODEPAS_LIB;
- {$ENDIF}
- {$IFDEF LINUX64}
-  HTTP_PARSER_LIB = NODEPAS_LIB;
- {$ENDIF}
-
   UF_MAX = 7;
 type
 

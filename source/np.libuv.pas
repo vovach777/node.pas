@@ -94,7 +94,38 @@ const
 
 const
   LIBUV_FILE = NODEPAS_LIB;
-  {$Message Error 'only 64 bit windows support!'}
+
+  sizeof_loop_t = 272;
+  sizeof_async_t = 48;
+  sizeof_check_t = 44;
+  sizeof_fs_event_t = 124;
+  sizeof_fs_poll_t = 36;
+  sizeof_handle_t = 32;
+  sizeof_idle_t = 44;
+  sizeof_pipe_t = 304;
+  sizeof_poll_t = 240;
+  sizeof_prepare_t = 44;
+  sizeof_process_t = 120;
+  sizeof_stream_t = 128;
+  sizeof_tcp_t = 152;
+  sizeof_timer_t = 72;
+  sizeof_tty_t = 176;
+  sizeof_udp_t = 272;
+  sizeof_signal_t = 120;
+  sizeof_req_t = 60;
+  sizeof_connect_t = 68;
+  sizeof_write_t = 92;
+  sizeof_shutdown_t = 68;
+  sizeof_udp_send_t = 68;
+  sizeof_fs_t = 312;
+  sizeof_work_t = 92;
+  sizeof_addrinfo_t = 112;
+  sizeof_nameinfo_t = 1288;
+  sizeof_rwlock_t = 32;
+  sizeof_cond_t = 4;
+  sizeof_barrier_t = 40;
+  sizeof_mutex_t = 24;
+
 
 {$ENDIF}
 

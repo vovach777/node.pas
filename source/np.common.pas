@@ -11,9 +11,8 @@ const
    NODEPAS_LIB = 'nodepaslib64.dll';
 {$ENDIF}
 {$IFDEF WIN32}
-const
   NODEPAS_LIB = 'nodepaslib32.dll';
-  {$Message Error 'only 64 bit windows support!'}
+//  {$Message Error 'only 64 bit windows support!'}
 {$ENDIF}
 
 
