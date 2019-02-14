@@ -278,15 +278,11 @@ begin
        uv_thread_join( @workers[i].thread )
    end;
    logme('terminated!');
-   loop.setImmediate(
+   setTimeout(
    procedure
    begin
-      stdOut.write('',
-       procedure
-       begin
           loop.terminate;
-       end);
-   end);
+   end,1000);
 end;
 
 begin

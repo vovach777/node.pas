@@ -806,7 +806,7 @@ function uv_send_buffer_size(handle: puv_handle_t; value: pinteger)
 function uv_recv_buffer_size(handle: puv_handle_t; value: pinteger)
   : Integer; cdecl;
 
-function uv_fileno(handle: puv_handle_t; var fd: uv_file): Integer; cdecl;
+function uv_fileno(handle: puv_handle_t; var fd: uv_os_fd_t): Integer; cdecl;
 
 function uv_buf_init(base: PByte; len: Cardinal): uv_buf_t;
 
