@@ -357,7 +357,7 @@ type
   puv_handle_t = ^uv_handle_s;
   puv_shutdown_t = ^uv_shutdown_s;
 
-  uv_file = Integer;
+  uv_file = uv_os_fd_t;
 
 {$POINTERMATH ON}
   puv_buf_t = ^uv_buf_t;
@@ -806,7 +806,7 @@ function uv_send_buffer_size(handle: puv_handle_t; value: pinteger)
 function uv_recv_buffer_size(handle: puv_handle_t; value: pinteger)
   : Integer; cdecl;
 
-function uv_fileno(handle: puv_handle_t; var fd: uv_os_fd_t): Integer; cdecl;
+function uv_fileno(handle: puv_handle_t; var fd: uv_file): Integer; cdecl;
 
 function uv_buf_init(base: PByte; len: Cardinal): uv_buf_t;
 
@@ -958,8 +958,7 @@ type
     (* Binary-safe I/O mode for IPC (Unix-only) *)
     UV_TTY_MODE_IO);
 
-function uv_tty_init(loop: puv_loop_t; tty: puv_tty_t; fd: uv_file;
-  readable: Integer): Integer; cdecl;
+function uv_tty_init(loop: puv_loop_t; tty: puv_tty_t; os_fd: uv_file; unused: Integer): Integer; cdecl;
 
 function uv_tty_set_mode(tty: puv_tty_t; mode: uv_tty_mode_t): Integer; cdecl;
 
@@ -968,6 +967,7 @@ function uv_tty_reset_mode: Integer; cdecl;
 function uv_tty_get_winsize(tty: puv_tty_t; var width, height: Integer)
   : Integer; cdecl;
 function uv_guess_handle(&file: uv_file): uv_handle_type; cdecl;
+
 (*
   * uv_pipe_t is a subclass of uv_stream_t.
   *
@@ -978,7 +978,7 @@ function uv_guess_handle(&file: uv_file): uv_handle_type; cdecl;
 function uv_pipe_init(loop: puv_loop_t; handle: puv_pipe_t; ipc: Integer)
   : Integer; cdecl;
 
-function uv_pipe_open(pipe: puv_pipe_t; &file: uv_file): Integer; cdecl;
+function uv_pipe_open(pipe: puv_pipe_t; os_fd: uv_file): Integer; cdecl;
 
 function uv_pipe_bind(handle: puv_pipe_t; name: pUtf8char): Integer; cdecl;
 
@@ -1452,6 +1452,8 @@ function uv_fs_event_stop(handle: puv_fs_event_t): Integer; cdecl;
 
 function uv_fs_event_getpath(handle: puv_fs_event_t; buffer: pchar;
   size: psize_t): Integer; cdecl;
+
+function uv_get_osfhandle(fd: uv_file) : uv_os_fd_t; inline;
 
 function uv_ip4_addr(ip: pAnsichar; port: Integer; out addr: Tsockaddr_in)
   : Integer; cdecl;
@@ -1969,6 +1971,12 @@ function uv_fs_event_start; external LIBUV_FILE;
 function uv_fs_event_stop; external LIBUV_FILE;
 
 function uv_fs_event_getpath; external LIBUV_FILE;
+
+function uv_get_osfhandle(fd: uv_file) : uv_os_fd_t;
+begin
+   result := uv_os_fd_t(fd);
+end;
+
 
 function uv_ip4_addr; external LIBUV_FILE;
 

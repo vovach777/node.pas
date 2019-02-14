@@ -18,10 +18,11 @@ interface
      end;
 
      IHttpResponse = interface
-     ['{21A7E87B-CC5A-45CB-A9F5-5C64EF696AB5}']
+     ['{98D9772D-CA13-4896-8382-477C15F1B332}']
         procedure writeHeader(code:Integer);
         procedure addHeader(const name: Utf8string; value: Utf8string);
         procedure finish(data: BufferRef);
+        function isFinished: boolean;
      end;
 
      IHttpClient = interface(INPTCPStream)
@@ -51,6 +52,8 @@ interface
         destructor Destroy; override;
      end;
 
+     TNPHttpServer = THttpServer;
+
 implementation
   uses np.http_parser;
 
@@ -59,6 +62,7 @@ type
 //     type
 //       TParseState = (psHeader,psBody,psProcess, psUpgrade);
      private
+        FResponseFinished : Boolean;
         Fsettings : Thttp_parser_settings;
         FParser: Thttp_parser;
         Flast_header_name: string;
@@ -83,6 +87,7 @@ type
         procedure writeHeader(code:Integer);
         procedure addHeader(const name: Utf8string; value: Utf8string);
         procedure finish(data: BufferRef);
+        function isfinished : Boolean;
 //        function ProcessNext : Boolean;
 //        procedure processBuf;
         procedure setOnRequest(proc: TProc);
@@ -93,6 +98,7 @@ type
         function GetReqPath : Utf8string;
         function GetReqMethod : Utf8string;
         function GetReqHeaders : THTTPHeader;
+        procedure InitRequest;
      public
         constructor Create( server: INPTCPServer; Actx : TSSL_CTX);
         destructor Destroy;override;
@@ -130,7 +136,9 @@ begin
                procedure
                begin
                   if assigned(FonRequest) then
+                  begin
                     FonRequest(c as IHttpRequest,c as IHttpResponse);
+                  end;
                end
             );
          end);
@@ -182,23 +190,22 @@ end;
 
    function on_message_begin( parser: PHttp_parser) : integer; cdecl;
    begin
-     outputdebugStr('on_message_begin');
-     THttpClient(  parser.data ).FHeaders.Clear;
-     THttpClient(  parser.data ).FBody := Buffer.Null;
+     //outputdebugStr('on_message_begin');
+     THttpClient( parser.data ).InitRequest;
      result := 0;
    end;
 
    function on_url(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
    begin
-     outputdebugStr('on_url %s',[tos(at,len)]);
-     THttpClient(  parser.data ).FUri := tos(at,len);
+     //outputdebugStr('on_url %s',[tos(at,len)]);
+     THttpClient(  parser.data ).FUri :=  TURL._DecodeURL( tos(at,len) );
      result := 0;
    end;
 
    function on_status(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
    begin
      //request only
-     outputdebugStr('on_status %s', [tos(at,len)]);
+     //outputdebugStr('on_status %s', [tos(at,len)]);
      result := 0;
    end;
 
@@ -266,13 +273,13 @@ end;
 
    function on_chunk_header( parser: PHttp_parser) : integer; cdecl;
    begin
-     outputdebugStr('on_chunk_header');
+     //outputdebugStr('on_chunk_header');
      result := 0;
    end;
 
    function on_chunk_complete( parser: PHttp_parser) : integer; cdecl;
    begin
-     outputdebugStr('on_chunk_complete');
+     //outputdebugStr('on_chunk_complete');
      result := 0;
    end;
 
@@ -457,6 +464,7 @@ var
  len,nbytes : integer;
  buf : BufferRef;
 begin
+  FResponseFinished := true;
   http_parser_init( FParser, HTTP_REQUEST );
 //  http_parser_init( FParser, HTTP_REQUEST );
 //  if FState = psProcess then
@@ -526,6 +534,15 @@ begin
   result := FUri;
 end;
 
+procedure THttpClient.InitRequest;
+begin
+   FHeaders.Clear;
+   FBody.length := 0;
+   FResponseFinished := false;
+   FUri := '';
+   FMethod := '';
+end;
+
 procedure THttpClient.InitTimeout;
 begin
   if assigned(FTimeout) then
@@ -541,6 +558,11 @@ begin
         do_shutdown;
       end, FTimeoutValue);
   end;
+end;
+
+function THttpClient.isfinished: Boolean;
+begin
+  result := FResponseFinished;
 end;
 
 procedure THttpClient.onClose;
@@ -661,6 +683,7 @@ end;
 }
 procedure THttpClient.writeHeader(code: Integer);
 begin
+  FResponseFinished := false;
   FResponse.buf.length := 0;
   FResponse.append( Format('HTTP/%d.%d %d %s'#13#10,[FParser.http_major,FParser.http_minor,code,ResponseText(Code)]));
 end;

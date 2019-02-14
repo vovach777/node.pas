@@ -15,14 +15,25 @@ begin
     loop.setImmediate(
         procedure
         begin
-          stdout.PrintLn(#27'[1;32m'+TOSVersion.ToString+#27'[m');
-          stdout.PrintLn('type `exit`');
+          if stdout.is_tty then
+          begin
+            stdout.PrintLn(#27'[1;32m'+TOSVersion.ToString+#27'[m');
+            stdout.PrintLn('type `exit`');
+          end
+          else
+          begin
+            stdout.PrintLn(TOSVersion.ToString);
+            stdout.PrintLn('type `exit`');
+          end;
           stdIn.setOnData(procedure(data:PBufferRef)
                           var
                             s : string;
                           begin
                             s := trim( data.AsUtf8String );
-                            stdout.PrintLn(#27'[1;33m'+s+#27'[m');
+                            if stdout.is_tty then
+                              stdout.PrintLn(#27'[1;33m'+s+#27'[m')
+                            else
+                              stdout.PrintLn(s);
                             if SameText(s,'exit') then
                                loop.terminate;
                           end);

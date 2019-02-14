@@ -364,6 +364,15 @@ interface
 
   INPTTY = interface(INPStream)
     ['{FA890477-2F37-4A17-84B0-7A7C47994000}']
+    procedure get_winsize(out width: integer; out height:integer);
+  end;
+
+  INPSTDOUT = interface
+  ['{59FDA766-1C20-4A9F-98F8-10E2B814AD10}']
+    function  stdout_type : uv_handle_type;
+    function  is_file : Boolean;
+    function  is_pipe : Boolean;
+    function  is_tty  : Boolean;
     procedure Print(const s: UTF8String);
     procedure PrintLn(const s: UTF8String);
     procedure MoveTo(x, y: integer);
@@ -372,7 +381,6 @@ interface
     procedure MoveToY(y: integer);
     procedure beginPrint;
     procedure endPrint;
-    procedure get_winsize(out width: integer; out height:integer);
   end;
 
       TNPSpawn = class(TNPBaseHandle, INPSpawn)
@@ -425,8 +433,8 @@ interface
 
   procedure LoopHere;
   function loop: TLoop;
-  function stdOut : INPTTY;
-  function stdErr : INPTTY;
+  function stdOut : INPSTDOUT;
+  function stdErr : INPSTDOUT;
   function stdIn  : INPStream;
   function stdInRaw : INPStream;
 
@@ -459,6 +467,17 @@ type
   TNPTTY = class( TNPStream, INPTTY )
   private
     Ftty: puv_tty_t;
+    procedure get_winsize(out width: integer; out height:integer);
+  public
+    constructor Create(fd:uv_os_fd_t=UV_STDOUT_FD);
+    destructor Destroy; override;
+  end;
+
+  TNPSTDOUT = class( TInterfacedObject, INPSTDOUT )
+  private
+    FHandleType: uv_handle_type;
+    FStream: INPStream;
+    FUVFile: uv_file;
     pbuf: UTF8String;
     pcount: integer;
     procedure PrintLn(const s: UTF8String);
@@ -470,9 +489,15 @@ type
     procedure beginPrint;
     procedure endPrint;
     procedure flush;
-    procedure get_winsize(out width: integer; out height:integer);
+    function  stdout_type : uv_handle_type;
+    function  is_file : Boolean;
+    function  is_pipe : Boolean;
+    function  is_tty  : Boolean;
+    function  get_tty: INPTTY;
+    function  get_file: uv_file;
+    function  get_pipe: INPPipe;
   public
-    constructor Create(fd:integer=UV_STDOUT_FD);
+    constructor Create(fd:uv_os_fd_t=UV_STDOUT_FD);
     destructor Destroy; override;
   end;
 
@@ -483,8 +508,8 @@ type
 
    threadvar
      tv_loop : TLoop;
-     tv_stdout: INPTTY;
-     tv_stderr: INPTTY;
+     tv_stdout: INPSTDOUT;
+     tv_stderr: INPSTDOUT;
      tv_stdin : INPStream;
      {$IFDEF MSWINDOWS}
 
@@ -500,31 +525,44 @@ type
       {$IFDEF MSWINDOWS}
        case fd  of
          UV_STDIN_FD:
-             exit( CreateFile('conin$',
-                           GENERIC_READ or GENERIC_WRITE,
-                           FILE_SHARE_READ or FILE_SHARE_WRITE,
-                           0,
-                           OPEN_EXISTING,
-                           FILE_ATTRIBUTE_NORMAL,
-                           0));
+            begin
+//             fd := CreateFile('CONIN$',
+//                           GENERIC_READ or GENERIC_WRITE,
+//                           FILE_SHARE_READ or FILE_SHARE_WRITE,
+//                           0,
+//                           OPEN_EXISTING,
+//                           FILE_ATTRIBUTE_NORMAL,
+//                           0);
+//               SetStdHandle(STD_INPUT_HANDLE,fd);
+               fd := uv_dup( GetStdHandle(STD_INPUT_HANDLE) );
+             end;
          UV_STDOUT_FD:
-             exit( CreateFile('conout$',
-                           GENERIC_READ or GENERIC_WRITE,
-                           FILE_SHARE_READ or FILE_SHARE_WRITE,
-                           0,
-                           OPEN_EXISTING,
-                           FILE_ATTRIBUTE_NORMAL,
-                           0));
+             begin
+               fd := uv_dup( GetStdHandle(STD_OUTPUT_HANDLE) );
+//               fd := CreateFile('CONOUT$',
+//                             GENERIC_READ or GENERIC_WRITE,
+//                             FILE_SHARE_READ or FILE_SHARE_WRITE,
+//                             0,
+//                             OPEN_EXISTING,
+//                             FILE_ATTRIBUTE_NORMAL,
+//                             0);
+//                SetStdHandle(STD_OUTPUT_HANDLE,fd);
+               end;
          UV_STDERR_FD:
-             exit( CreateFile('conerr$',
-                           GENERIC_READ or GENERIC_WRITE,
-                           FILE_SHARE_READ or FILE_SHARE_WRITE,
-                           0,
-                           OPEN_EXISTING,
-                           FILE_ATTRIBUTE_NORMAL,
-                           0));
+             begin
+//               fd := CreateFile('CONOUT$',
+//                           GENERIC_READ or GENERIC_WRITE,
+//                           FILE_SHARE_READ or FILE_SHARE_WRITE,
+//                           0,
+//                           OPEN_EXISTING,
+//                           FILE_ATTRIBUTE_NORMAL,
+//                           0);
+//                SetStdHandle(STD_ERROR_HANDLE,fd);
+               fd := uv_dup( GetStdHandle(STD_ERROR_HANDLE) );
+             end;
        end;
        {$ENDIF}
+
        exit(fd);
     end;
 
@@ -1648,7 +1686,7 @@ end;
 
 function TNPBaseHandle.is_closing: Boolean;
 begin
-  result := not assigned( FHandle) or (uv_is_closing(FHandle) <> 0);
+  result := not assigned( FHandle) or not assigned(FActiveRef) or (uv_is_closing(FHandle) <> 0) ;
 end;
 
 procedure TNPBaseHandle.onClose;
@@ -2097,26 +2135,66 @@ type
 
 { TNPTTY }
 
-procedure TNPTTY.beginPrint;
+procedure TNPSTDOUT.beginPrint;
 begin
   Inc(pcount);
 end;
 
-constructor TNPTTY.Create(fd: integer);
+constructor TNPSTDOUT.Create(fd: uv_os_fd_t);
+var
+  ht : uv_handle_type;
+  fd2 :  uv_os_fd_t;
+
 begin
-  inherited Create(UV_TTY);
-  FTTY := puv_tty_t(FHandle);
-  np_ok( uv_tty_init( loop.uvloop,FTTY, handle_tty(fd), 0) );
-  FActiveRef := self;
+  try
+    FHandleType := uv_guess_handle(fd);
+  {$IFDEF MSWINDOWS}
+    case fd of
+      UV_STDIN_FD,
+      UV_STDOUT_FD,
+      UV_STDERR_FD:
+         fd := handle_tty(fd);
+    end;
+  {$ENDIF}
+    FHandleType := uv_guess_handle(fd);
+    case FHandleType of
+      UV_TTY:
+         begin
+            OutputDebugString('try => console');
+            FStream := TNPTTY.Create(fd);
+         end;
+      UV_NAMED_PIPE:
+        begin
+           OutputDebugString('try => pipe');
+           INPPipe( FStream ):= TNPPipe.Create;
+           INPPipe( FStream ).open(fd);
+           //raise Exception.Create('Can not create tty!');
+        end;
+      UV_FILE_:
+         begin
+           OutputDebugString('try => file');
+           FUVFile := uv_get_osfhandle( fd );
+           assert(FUVFile <> INVALID_HANDLE_VALUE);
+         end
+      else
+      begin
+           OutputDebugString(PChar(Format('try => type(%d)',[ord(ht)])));
+           raise Exception.Create('Can not create tty!');
+      end;
+    end;
+  except
+     OutputDebugString('can not create tty!');
+     raise;
+  end;
 end;
 
-destructor TNPTTY.Destroy;
+destructor TNPSTDOUT.Destroy;
 begin
   //Writeln('tty closed');
   inherited;
 end;
 
-procedure TNPTTY.endPrint;
+procedure TNPSTDOUT.endPrint;
 begin
   dec(pcount);
   if pcount = 0 then
@@ -2136,44 +2214,98 @@ begin
   Dispose(wr);
 end;
 
-procedure TNPTTY.flush;
+type
+   pnp_fs = ^Tnp_fs;
+   Tnp_fs = record
+      base: uv_fs_t;
+      buf:  UTF8String;
+   end;
+
+procedure cb_fs_write(req: pnp_fs); cdecl;
 begin
-  write(pbuf);
+//  OutputDebugString(PChar(Format('"%s" write succes"',[req.buf])));
+  req.buf := '';
+  Dispose(req);
+end;
+
+procedure TNPSTDOUT.flush;
+var
+   req: pNP_fs;
+   buf: uv_buf_t;
+begin
+  if pBuf = '' then
+    exit;
+  if is_pipe or is_tty then
+     FStream.write(pbuf)
+  else
+  if is_file then
+  begin
+    new(req);
+    fillchar(req^,sizeof( req^), 0);
+    req.buf := pBuf;
+    buf.base := @req.buf[1];
+    buf.len := length(req.buf);
+//    try
+      np_ok( uv_fs_write(loop.uvloop, @req.base, FUVFile, @buf, 1, -1, @cb_fs_write) );
+//    except
+//      on E:Exception do
+//        OutputDebugString(PChar(E.Message));
+//    end;
+  end;
   pbuf := '';
 end;
 
-procedure TNPTTY.get_winsize(out width, height: integer);
+function TNPSTDOUT.get_file: uv_file;
 begin
-  np_ok( uv_tty_get_winsize(Ftty,width,height) );
-  if (width = 0) or (height = 0)  then
-  begin
-    width  := 80;
-    height := 25;
-  end;
-
+   result := FUVFile;
 end;
 
-procedure TNPTTY.MoveTo(x, y: integer);
+function TNPSTDOUT.get_pipe: INPPipe;
+begin
+  result := FStream as INPPipe;
+end;
+
+function TNPSTDOUT.get_tty: INPTTY;
+begin
+  result := FStream as INPTTY;
+end;
+
+function TNPSTDOUT.is_file: Boolean;
+begin
+  result := FHandleType = UV_FILE_;
+end;
+
+function TNPSTDOUT.is_pipe: Boolean;
+begin
+  result := FHandleType = UV_NAMED_PIPE;
+end;
+
+function TNPSTDOUT.is_tty: Boolean;
+begin
+  result := FHandleType = UV_TTY;
+end;
+
+procedure TNPSTDOUT.MoveTo(x, y: integer);
 begin
   Print(Format(#27'[%d;%dH', [y, x]));
 end;
 
-procedure TNPTTY.MoveTo1x1;
+procedure TNPSTDOUT.MoveTo1x1;
 begin
   Print(#27'[H');
 end;
 
-procedure TNPTTY.MoveToY(y: integer);
+procedure TNPSTDOUT.MoveToY(y: integer);
 begin
   Print(Format(#27'[%dH', [y]));
 end;
 
-procedure TNPTTY.MoveToX(x: integer);
+procedure TNPSTDOUT.MoveToX(x: integer);
 begin
   Print(Format(#27'[;%dH', [x]));
 end;
 
-procedure TNPTTY.Print(const s: UTF8String);
+procedure TNPSTDOUT.Print(const s: UTF8String);
 begin
   if length(s) > 0 then
   begin
@@ -2183,12 +2315,35 @@ begin
   end;
 end;
 
-procedure TNPTTY.PrintLn(const s: UTF8String);
+procedure TNPSTDOUT.PrintLn(const s: UTF8String);
 begin
   beginPrint;
      print(s);
      print(#13#10);
   endPrint;
+end;
+
+function TNPSTDOUT.stdout_type: uv_handle_type;
+begin
+  result := FHandleType;
+end;
+
+{ TNPTTY }
+
+constructor TNPTTY.Create(fd: uv_os_fd_t);
+begin
+  fd := handle_tty( fd );
+  assert(uv_guess_handle(fd) = UV_TTY);
+  inherited Create(UV_TTY);
+  FTTY := puv_tty_t(FHandle);
+  np_ok( uv_tty_init( loop.uvloop,FTTY, fd, 0) );
+  FActiveRef := self;
+end;
+
+destructor TNPTTY.Destroy;
+begin
+
+  inherited;
 end;
 
 { TNPTTY_INPUT }
@@ -2201,6 +2356,22 @@ begin
       uv_tty_set_mode(puv_tty_t(FHandle), UV_TTY_MODE_RAW);
    FActiveRef := self;
 end;
+
+procedure TNPTTY.get_winsize(out width, height: integer);
+begin
+   width := 0;
+   height := 0;
+  if Ftty <> nil then
+  begin
+    np_ok( uv_tty_get_winsize(Ftty,width,height) );
+  end;
+  if (width = 0) or (height = 0)  then
+  begin
+    width  := 80;
+    height := 25;
+  end;
+end;
+
 
 
 procedure __exit_cb(process: puv_process_t; exit_status: Int64;
@@ -2337,22 +2508,22 @@ begin
    Clear;
 end;
 
-  function stdOut : INPTTY;
+  function stdOut : INPSTDOUT;
   begin
     if not assigned(tv_stdOut) then
     begin
-      tv_stdOut := TNPTTY.Create(UV_STDOUT_FD);
+      tv_stdOut := TNPSTDOUT.Create(UV_STDOUT_FD);
     end;
     result := tv_stdOut;
   end;
 
-  function stdErr : INPTTY;
+  function stdErr : INPSTDOUT;
   var
     fd : uv_os_fd_t;
   begin
     if not assigned(tv_stdErr) then
     begin
-       tv_stdErr := TNPTTY.Create(UV_STDERR_FD);
+       tv_stdErr := TNPSTDOUT.Create(UV_STDERR_FD);
     end;
     result := tv_stdErr;
   end;

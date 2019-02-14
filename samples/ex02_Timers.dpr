@@ -12,22 +12,22 @@ uses
   var
     int1 : INPHandle;
 begin
-    WriteLn(IntToStr(loop.now) + '> '+ TOSVersion.ToString);
+    stdout.PrintLn(IntToStr(loop.now) + '> '+ TOSVersion.ToString);
     SetTimeout(
               procedure
               begin
-                WriteLn(IntToStr(loop.now) + '> timer 1s fire');
+                stdout.PrintLn(IntToStr(loop.now) + '> timer 1s fire');
               end, 1000);
     SetTimeout(
                procedure
                begin
-                 WriteLn(IntToStr(loop.now) + '> clear int1 from 10s timer...');
+                 stdout.PrintLn(IntToStr(loop.now) + '> clear int1 from 10s timer...');
                  int1.Clear;
                end, 10000);
     int1 := SetInterval(
               procedure
               begin
-                WriteLn(IntToStr(loop.now) + '> interval');
+                stdout.PrintLn(IntToStr(loop.now) + '> interval');
               end, 1001);
   end;
 
