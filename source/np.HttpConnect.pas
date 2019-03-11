@@ -2,12 +2,12 @@ unit np.HttpConnect;
 
 interface
  uses np.core, np.EventEmitter, np.httpParser, Generics.Collections, sysUtils,
-      np.buffer, np.url, np.OpenSSL;
+      np.buffer, np.url, np.OpenSSL, np.http_parser, np.common;
 
  const
   ev_BeforeProcess = 1;
   ev_HeaderLoaded  = 2;
-  ev_ContentUpdated = 3;
+//  ev_ContentUpdated = 3;
   ev_Complete = 4;
   ev_connected = 5;
   ev_disconnected = 6;
@@ -72,6 +72,10 @@ interface
       IsConnected: Boolean;
       isHandshake: Boolean;
       onTimeout: INPTimer;
+      Fsettings : Thttp_parser_settings;
+      FParser: Thttp_parser;
+      Flast_header_name: string;
+      Flast_header_value: string;
 //      isFin: Boolean;
       procedure CheckConnect;
       procedure ProcessRequest;
@@ -81,6 +85,13 @@ interface
       procedure onSSLData(const chunk:BufferRef);
       procedure InternalClose;
       procedure Request(req: TBaseHttpRequest);
+      procedure on_message_begin;
+//      procedure on_url(const s : string);
+      procedure on_status(const s : string);
+      procedure on_header_field;
+      procedure on_headers_complete;
+      procedure on_body(const ABuf : BufferRef);
+      procedure on_message_complete;
     public
       url : TURL;
       function  _GET(const Apath: string): TBaseHttpRequest;
@@ -91,6 +102,83 @@ interface
 
 implementation
   uses np.ut, np.netEncoding;
+
+   function tos(const at:PAnsiChar; len: SiZE_t) : string;
+   begin
+      SetString(result,at,len);
+   end;
+
+   function _on_message_begin( parser: PHttp_parser) : integer; cdecl;
+   begin
+     THttpConnect( parser.data ).on_message_begin;
+     result := 0;
+   end;
+
+//   function _on_url(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+//   begin
+//     THttpConnect( parser.data ).on_url(  TURL._DecodeURL( tos(at,len) ) );
+//     result := 0;
+//   end;
+
+   function _on_status(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+     THttpConnect(parser.data).on_status( tos(at,len) );
+     result := 0;
+   end;
+
+   function _on_header_field(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+   //  outputdebugStr('on_header_field "%s"', [tos(at,len)]);
+     THttpConnect(  parser.data ).Flast_header_name := LowerCase( tos(at,len) );
+     result := 0;
+   end;
+
+   function _on_header_value(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+    // outputdebugStr('on_header_value "%s"', [tos(at,len)]);
+     with THttpConnect(  parser.data ) do
+     begin
+   //    outputdebugStr('| %s = %s',[ Flast_header_name, tos(at,len) ] );
+       //FHeaders.addSubFields( Flast_header_name,  tos(at,len) );
+       Flast_header_value := tos(at,len);
+       on_header_field();
+       Flast_header_name := '';
+       Flast_header_value := '';
+     end;
+     result := 0;
+   end;
+
+   function _on_headers_complete( parser: PHttp_parser) : integer; cdecl;
+   begin
+     THttpConnect(  parser.data ).on_headers_complete;
+     result := 0;
+   end;
+
+   function _on_body(parser: PHttp_parser; const at: PAnsiChar; len:SIZE_T) : integer; cdecl;
+   begin
+     THttpConnect(  parser.data ).on_body( BufferRef.CreateWeakRef(at,len) );
+     result := 0;
+   end;
+
+   function _on_message_complete( parser: PHttp_parser) : integer; cdecl;
+   begin
+     //outputdebugStr('on_message_complete');
+     THttpConnect(  parser.data ).on_message_complete();
+     result := 0;
+   end;
+
+//   function _on_chunk_header( parser: PHttp_parser) : integer; cdecl;
+//   begin
+//     //outputdebugStr('on_chunk_header');
+//     result := 0;
+//   end;
+//
+//   function _on_chunk_complete( parser: PHttp_parser) : integer; cdecl;
+//   begin
+//     //outputdebugStr('on_chunk_complete');
+//     result := 0;
+//   end;
+
 
 { TBaseHttpRequest }
 
@@ -119,6 +207,20 @@ begin
          end;
 
        end);
+  http_parser_settings_init(FSettings);
+  FSettings.on_message_begin := _on_message_begin;
+//  FSettings.on_url := _on_url;
+  FSettings.on_status := _on_status;
+  FSettings.on_header_field := _on_header_field;
+  FSettings.on_header_value := _on_header_value;
+  FSettings.on_headers_complete := _on_headers_complete;
+  FSettings.on_body := _on_body;
+  FSettings.on_message_complete := _on_message_complete;
+//  FSettings.on_chunk_header := _on_chunk_header;
+//  FSettings.on_chunk_complete := _on_chunk_complete;
+  http_parser_init(FParser, HTTP_RESPONSE);
+  FParser.data := self;
+
 //  fltc := 0;
 //  fltd := 0;
 //  on_(ev_connected,
@@ -304,47 +406,52 @@ var
   req: TBaseHttpRequest;
   header: BufferRef;
 begin
-  if queue.Count = 0 then
-    exit;
-  req := queue.Peek;
-  assert( req.isPending );
-//  if not req.isPending then
-//  begin
-//     req.ClearResponse;
-//     req.isPending := true;
-//  end;
+  if (chunk.length > 0) then
+    http_parser_execute(FParser,Fsettings,PAnsiChar( chunk.ref ), chunk.length);
 
-  if req.ResponseHeader <> nil then
-   optimized_append(req.ResponseContent,chunk)
-  else
-  begin
-    optimized_append(Fdata,chunk);
-    if not CheckHttpAnswer(Fdata,req.protocol,req.statusCode,req.statusReason, header, req.ResponseContent) then
-      exit;
-    req.ResponseHeader := THTTPHeader.Create(header);
-    req.emit(ev_HeaderLoaded, req);
-    Fdata.length := 0;
-  end;
-  if req.ConnectionOwner then
-  begin
-    if req.ResponseContent.length > 0 then
-      req.emit(ev_ContentUpdated, @req.ResponseContent);
-  end
-  else
-  if req.ResponseContent.length >= req.ResponseHeader.ContentLength then
-  begin
-     req.ResponseContent.length := req.ResponseHeader.ContentLength;
-     req.isPending := false;
-     queue.Dequeue;
-     req.isInQueue := false;
-     if not req.isDone then
-     begin
-       req.emit(ev_Complete, req);
-     end
-     else
-       req.free;
-     ProcessRequest; //Check next request
-  end;
+//  if queue.Count = 0 then
+//    exit;
+//  req := queue.Peek;
+//  assert( req.isPending );
+//
+//
+////  if not req.isPending then
+////  begin
+////     req.ClearResponse;
+////     req.isPending := true;
+////  end;
+//
+//  if req.ResponseHeader <> nil then
+//   optimized_append(req.ResponseContent,chunk)
+//  else
+//  begin
+//    optimized_append(Fdata,chunk);
+//    if not CheckHttpAnswer(Fdata,req.protocol,req.statusCode,req.statusReason, header, req.ResponseContent) then
+//      exit;
+//    req.ResponseHeader := THTTPHeader.Create(header);
+//    req.emit(ev_HeaderLoaded, req);
+//    Fdata.length := 0;
+//  end;
+//  if req.ConnectionOwner then
+//  begin
+//    if req.ResponseContent.length > 0 then
+//      req.emit(ev_ContentUpdated, @req.ResponseContent);
+//  end
+//  else
+//  if req.ResponseContent.length >= req.ResponseHeader.ContentLength then
+//  begin
+//     req.ResponseContent.length := req.ResponseHeader.ContentLength;
+//     req.isPending := false;
+//     queue.Dequeue;
+//     req.isInQueue := false;
+//     if not req.isDone then
+//     begin
+//       req.emit(ev_Complete, req);
+//     end
+//     else
+//       req.free;
+//     ProcessRequest; //Check next request
+//  end;
 end;
 
 procedure THttpConnect.onSSLData(const chunk: BufferRef);
@@ -383,6 +490,101 @@ begin
     con.Clear;
   end;
 end;
+
+procedure THttpConnect.on_body(const ABuf: BufferRef);
+var
+  req : TBaseHttpRequest;
+begin
+  if (queue.Count >0) then
+  begin
+    req := queue.Peek;
+    optimized_append( req.ResponseContent, ABuf);
+  end;
+end;
+
+procedure THttpConnect.on_headers_complete;
+var
+  req : TBaseHttpRequest;
+begin
+  OutputDebugStr('on_headers_complete');
+  if (queue.Count >0) then
+  begin
+    req := queue.Peek;
+    req.ResponseHeader.parse(Buffer.Null);
+    req.emit(ev_HeaderLoaded, req);
+  end;
+end;
+
+procedure THttpConnect.on_header_field;
+var
+  req : TBaseHttpRequest;
+begin
+  OutputDebugStr('on_header_field %s=%s',[Flast_header_name, Flast_header_value]);
+  if (queue.Count >0) then
+  begin
+    req := queue.Peek;
+    if assigned( req.ResponseHeader ) then
+       req.ResponseHeader.addSubFields( Flast_header_name, Flast_header_value );
+  end;
+end;
+
+procedure THttpConnect.on_message_begin;
+var
+  req : TBaseHttpRequest;
+begin
+   Flast_header_name := '';
+   Flast_header_value := '';
+   OutputDebugStr('on_message_begin');
+  if (queue.Count >0) then
+  begin
+    req := queue.Peek;
+    if assigned( req.ResponseHeader ) then
+      req.ResponseHeader.Clear
+    else
+      req.ResponseHeader := THTTPHeader.Create(Buffer.Null);
+  end;
+
+end;
+
+procedure THttpConnect.on_message_complete;
+var
+  req : TBaseHttpRequest;
+begin
+   OutputDebugStr('on_message_complete');
+   if queue.Count > 0 then
+   begin
+     req := queue.Peek;
+     req.isPending := false;
+     queue.Dequeue;
+     req.isInQueue := false;
+     if not req.isDone then
+     begin
+       req.emit(ev_Complete, req);
+     end
+     else
+       req.free; //no one interest with reques...
+     ProcessRequest; //Check next request
+   end;
+end;
+
+procedure THttpConnect.on_status(const s: string);
+var
+  req : TBaseHttpRequest;
+begin
+   if queue.Count > 0 then
+   begin
+     req := queue.Peek;
+     req.statusCode := ord ( http_parser_get_status_code( FParser ) );
+     req.statusReason := s;
+     req.protocol := Format('HTTP/%u.%u',[ FParser.http_major, FParser.http_minor ]);
+   OutputDebugStr(Format('on_status: %u %s (%s)',[req.statusCode, req.statusReason, req.protocol]));
+   end;
+end;
+
+//procedure THttpConnect.on_url(const s: string);
+//begin
+//   OutputDebugStr('on_url: '+s);
+//end;
 
 procedure THttpConnect.Request(req: TBaseHttpRequest);
 begin
@@ -456,6 +658,10 @@ begin
     if url.Schema <> 'http' then
       raise ENotSupportedException.CreateFmt('unknown url schema: "%s"',[url.Schema]);
     emit(ev_connecting,self);
+    http_parser_init(FParser, HTTP_RESPONSE);
+    FParser.data := self;
+
+
     closeBadly := false;
     con := TNPTCPStream.CreateConnect;
     con.set_nodelay(true);
@@ -697,6 +903,11 @@ end;
 
 procedure THttpConnect.InternalClose;
 begin
+   if http_message_needs_eof(FParser) <> 0 then
+      http_parser_execute(FParser,Fsettings,nil,0);
+
+  ClearTimer( onTimeout );
+
   if isConnected then
   begin
      emit(ev_disconnected,self);
@@ -710,11 +921,6 @@ begin
     if assigned(Fssl) then
       SSL_free(Fssl);
     Fssl := nil;
-  end;
-  if assigned( onTimeout ) then
-  begin
-     onTimeout.Clear;
-     onTimeout := nil;
   end;
 end;
 

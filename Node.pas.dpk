@@ -46,11 +46,11 @@ contains
   np.libuv in 'source\np.libuv.pas',
   np.winsock in 'source\np.winsock.pas',
   np.core.ed in 'source\np.core.ed.pas',
-  np.json in 'source\np.json.pas',
   np.HttpConnect in 'source\np.HttpConnect.pas',
   np.eventEmitter in 'source\np.eventEmitter.pas',
   np.http_parser in 'source\np.http_parser.pas',
-  np.common in 'source\np.common.pas';
+  np.common in 'source\np.common.pas',
+  np.json in 'source\np.json.pas';
 
 end.
 

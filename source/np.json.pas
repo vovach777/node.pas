@@ -154,33 +154,30 @@ destructor TJSONPair.Destroy;
 begin
   if assigned(owner) and assigned(owner.FArray) then
     owner.FArray.Extract(self);
-  FreeAndNil(FObject);
+  Clear;
+  if assigned(FArray) then
+    FArray.OnNotify := nil;
+  if assigned(FObject) then
+    FObject.OnValueNotify := nil;
   FreeAndNil(FArray);
+  FreeAndNil(FObject);
   inherited;
 end;
 
 procedure TJSONPair.assign(pair: TJSONPair; overrideName : Boolean; Adelete : Boolean);
 var
-  item, cloneItem : TJSONPair;
+  s : String;
 begin
-  Clear;
-  if pair = nil then
-    exit;
-  if overrideName then
-    name := pair.name;
-  typeIs := pair.typeIs;
-  IsString := pair.IsString;
-  IsInteger := pair.IsInteger;
-  for item in pair.IsArray do
+  if not assigned(pair) then
   begin
-    cloneItem := item.Clone;
-    cloneItem.owner := self;
-    IsArray.Add(cloneItem);
-    if typeIs = json_object then
-      IsObject.AddOrSetValue(cloneItem.name,cloneItem);
+     Clear;
+     exit;
   end;
+  S := pair.ToString;
   if Adelete then
-    pair.Free;
+    freeAndNil(pair);
+  Parse(s);
+
 end;
 
 
@@ -199,24 +196,22 @@ class function TJSONPair.DecodeJSONText(const JSON : string; var Index: Integer)
     string;
 var
   L : Integer;
+  SkipMode : Boolean;
 begin
+  result := '';
   if Index < 1 then
      Index := 1;
-
-  Result := '';
+  SkipMode := true;
   L := Length(JSON);
-  repeat
-    While (Index<=L) and (JSON[Index] <> '"') DO
-      Inc(Index);
-    Inc(Index); //skip left "
-  until (Index > L) or (Index=2) or (JSON[Index-2] <> '\');
   While (Index<=L) DO
   BEGIN
     case JSON[Index] of
        '"':
          begin
            Inc(Index); //Skip rigth "
-           break;
+           if not SkipMode then
+              break;
+           skipMode := false;
          end;
        #0..#$1f:
           INC(Index);//ignore
@@ -227,11 +222,13 @@ begin
                 case JSON[Index+1] of
                   '"','\','/' :
                        begin
-                         Result := Result + JSON[Index+1];
+                         if not skipMode then
+                           Result := Result + JSON[Index+1];
                          INC(Index,2);
                        end;
                   'u':
                       begin
+                         if not skipMode then
                           Result := Result + char(word(
                              StrToIntDef('$'+copy(JSON,Index+2,4),ord('?'))
                                        ));
@@ -239,27 +236,32 @@ begin
                       end;
                    'b':
                       begin
-                         Result := Result + #8;
+                         if not skipMode then
+                           Result := Result + #8;
                          INC(Index,2);
                       end;
                    'f':
                       begin
-                         Result := Result + #12;
+                         if not skipMode then
+                           Result := Result + #12;
                          INC(Index,2);
                       end;
                    'n':
                       begin
-                        Result := Result + #10;
+                        if not skipMode then
+                          Result := Result + #10;
                         INC(Index,2);
                       end;
                    'r':
                       begin
-                        Result := Result + #13;
+                        if not skipMode then
+                          Result := Result + #13;
                         INC(Index,2);
                       end;
                    't':
                       begin
-                        Result := Result + #9;
+                        if not skipMode then
+                          Result := Result + #9;
                         INC(Index,2);
                       end;
                    else
@@ -269,8 +271,9 @@ begin
            end;
        else
        begin
-          Result := Result +  JSON[Index];
-          INC(Index);
+         if not skipMode then
+            Result := Result +  JSON[Index];
+         INC(Index);
        end;
     end;
   END;
@@ -281,7 +284,7 @@ var
   i : integer;
 begin
   i := 1;
-  Result := DecodeJSONText(JSON,i);
+  Result := TJSONPair.DecodeJSONText(JSON,i);
 end;
 
 function TJSONPair.GetAsArray(i: integer): TJSONPair;
@@ -441,6 +444,7 @@ begin
     CASE JSON[I] OF
       '{':
          begin
+            INC(I);
             repeat
               K := DecodeJSONText(JSON,I);
               While (I<=L) and (JSON[I] <> ':') DO INC(I);

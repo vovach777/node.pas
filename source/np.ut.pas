@@ -26,7 +26,7 @@ const
   function StringPostfixIs(const postfix, str : string) : Boolean;
   function StrToHex(const s: RawByteString): UTF8String;
   function prettyJSON(const inJson :string) : string;
-  function JSONText(const json : string) : string;
+  function JSONText(const json : string; OnlySpacial: Boolean = false) : string;
   function JSONBoolean(bool : Boolean): string;
 
 {$IFDEF MSWINDOWS}
@@ -69,6 +69,14 @@ function StrRemoveQuote(const s :string) : string;
 
 function DecodeJSONText(const JSON : string; var Index: Integer) : string;
 
+function UnicodeSameText(const A1,A2 : String) : Boolean;
+type
+   TTokenMap = TFunc<string,string>;
+
+function macros(const templ: string; const macroOpen,macroClose: string; const mapFunc : TTokenMap; macroInsideMacro:Boolean=false ) : string;
+function trimar(const ar: TArray<string>) : TArray<string>;
+
+
 implementation
     uses
       {$IFDEF MSWINDOWS}
@@ -77,7 +85,7 @@ implementation
       {$IFDEF POSIX}
         Posix.SysTime,
       {$ENDIF}
-    Classes, DateUtils;
+    Classes, DateUtils, Character;
 
 var
    g_TraceEnabled : Boolean = {$IFDEF DEBUG} true {$ELSE} false {$ENDIF} ;
@@ -245,7 +253,7 @@ begin
 end;
 
 
-  function JSONText(const json : string) : string;
+  function JSONText(const json : string; OnlySpacial: Boolean) : string;
   var
     sb : TStringBuilder;
     ch : char;
@@ -267,6 +275,9 @@ end;
            '\': sb.Append('\\');
            '/': sb.Append('\/');
            #$80..#$ffff:
+               if OnlySpacial then
+                  sb.Append(ch)
+               else
                 sb.AppendFormat('\u%.4x',[word(ch)]);
            else
              begin
@@ -927,27 +938,25 @@ begin
     result := s;
 end;
 
-function DecodeJSONText(const JSON : string; var Index : Integer) : string;
+function DecodeJSONText(const JSON : string; var Index: Integer) : string;
 var
   L : Integer;
+  SkipMode : Boolean;
 begin
+  result := '';
   if Index < 1 then
      Index := 1;
-
-  Result := '';
+  SkipMode := true;
   L := Length(JSON);
-  repeat
-    While (Index<=L) and (JSON[Index] <> '"') DO
-      Inc(Index);
-    Inc(Index); //skip left "
-  until (Index > L) or (Index=2) or (JSON[Index-2] <> '\');
   While (Index<=L) DO
   BEGIN
     case JSON[Index] of
        '"':
          begin
            Inc(Index); //Skip rigth "
-           break;
+           if not SkipMode then
+              break;
+           skipMode := false;
          end;
        #0..#$1f:
           INC(Index);//ignore
@@ -958,11 +967,13 @@ begin
                 case JSON[Index+1] of
                   '"','\','/' :
                        begin
-                         Result := Result + JSON[Index+1];
+                         if not skipMode then
+                           Result := Result + JSON[Index+1];
                          INC(Index,2);
                        end;
                   'u':
                       begin
+                         if not skipMode then
                           Result := Result + char(word(
                              StrToIntDef('$'+copy(JSON,Index+2,4),ord('?'))
                                        ));
@@ -970,27 +981,32 @@ begin
                       end;
                    'b':
                       begin
-                         Result := Result + #8;
+                         if not skipMode then
+                           Result := Result + #8;
                          INC(Index,2);
                       end;
                    'f':
                       begin
-                         Result := Result + #12;
+                         if not skipMode then
+                           Result := Result + #12;
                          INC(Index,2);
                       end;
                    'n':
                       begin
-                        Result := Result + #10;
+                        if not skipMode then
+                          Result := Result + #10;
                         INC(Index,2);
                       end;
                    'r':
                       begin
-                        Result := Result + #13;
+                        if not skipMode then
+                          Result := Result + #13;
                         INC(Index,2);
                       end;
                    't':
                       begin
-                        Result := Result + #9;
+                        if not skipMode then
+                          Result := Result + #9;
                         INC(Index,2);
                       end;
                    else
@@ -1000,11 +1016,57 @@ begin
            end;
        else
        begin
-          Result := Result +  JSON[Index];
-          INC(Index);
+         if not skipMode then
+            Result := Result +  JSON[Index];
+         INC(Index);
        end;
     end;
   END;
+end;
+
+function UnicodeSameText(const A1,A2 : String) : Boolean;
+begin
+   result := Char.ToLower(A1) = Char.ToLower(A2);
+end;
+
+function macros(const templ: string; const macroOpen,macroClose: string; const mapFunc : TTokenMap; macroInsideMacro:Boolean ) : string;
+var
+  F,T,SKIP: INTEGER;
+  token : string;
+  S : string;
+begin
+  if (macroOpen = '') or (macroClose='') then
+      Exit( macros(templ,'${','}',mapFunc));
+  S := templ;
+  SKIP := 1;
+  repeat
+    F := PosEx(macroOpen,S,SKIP);
+    if (F=0) then
+       break;
+    T := PosEx(macroClose,S,F+Length(macroOpen));
+    if T=0 then
+      break;
+    token := copy(s,F+Length(macroOpen),(T-F-Length(macroOpen)));
+    if assigned(mapFunc) then
+      token := mapFunc(token)
+    else
+      token := '';
+    Delete(s,F,(T-F+Length(macroClose)));
+    Insert(token,s,F);
+    SKIP := F;//+length(token);
+    if not macroInsideMacro then
+        INC(SKIP,Length(token));
+  until false;
+  result := s;
+end;
+
+function trimar(const ar: TArray<string>) : TArray<string>;
+var
+  i : integer;
+begin
+   SetLength(result, length(ar));
+   for i := 0 to length(ar)-1 do
+     result[i] := trim(ar[i]);
 end;
 
 

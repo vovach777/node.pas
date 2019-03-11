@@ -805,12 +805,15 @@ begin
 end;
 
 procedure __cbWalk(handle: puv_handle_t; arg: pinteger); cdecl;
-var
- ht : uv_handle_type;
+//var
+// ht : uv_handle_type;
 begin
-  ht := uv_get_handle_type(handle);
+//  ht := uv_get_handle_type(handle);
   if uv_is_closing(handle) = 0 then
-    uv_close(handle, uv_get_close_cb(handle));
+  begin
+    uv_close(handle, uv_get_close_cb(handle)  );
+  end;
+
 end;
 
 procedure TLoop.run_nowait();
@@ -1285,7 +1288,6 @@ procedure __connection_cb(server : puv_stream_t; status: integer); cdecl;
 var
   ud : TNPStream;
 begin
-  {TODO: move to class}
   ud := uv_get_user_data(server);
   try
     if status = 0 then
@@ -2146,7 +2148,7 @@ var
   fd2 :  uv_os_fd_t;
 
 begin
-  try
+//  try
     FHandleType := uv_guess_handle(fd);
   {$IFDEF MSWINDOWS}
     case fd of
@@ -2160,32 +2162,32 @@ begin
     case FHandleType of
       UV_TTY:
          begin
-            OutputDebugString('try => console');
+            //OutputDebugString('stdout => tty');
             FStream := TNPTTY.Create(fd);
          end;
       UV_NAMED_PIPE:
         begin
-           OutputDebugString('try => pipe');
+           //OutputDebugString('try => pipe');
            INPPipe( FStream ):= TNPPipe.Create;
            INPPipe( FStream ).open(fd);
            //raise Exception.Create('Can not create tty!');
         end;
       UV_FILE_:
          begin
-           OutputDebugString('try => file');
+           //OutputDebugString('stdout => file');
            FUVFile := uv_get_osfhandle( fd );
            assert(FUVFile <> INVALID_HANDLE_VALUE);
          end
       else
       begin
-           OutputDebugString(PChar(Format('try => type(%d)',[ord(ht)])));
+           //OutputDebugString(PChar(Format('stdout => type(%d)',[ord(ht)])));
            raise Exception.Create('Can not create tty!');
       end;
     end;
-  except
-     OutputDebugString('can not create tty!');
-     raise;
-  end;
+//  except
+//    OutputDebugString('can not create tty!');
+//     raise;
+//  end;
 end;
 
 destructor TNPSTDOUT.Destroy;

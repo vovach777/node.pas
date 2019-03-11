@@ -49,6 +49,7 @@ interface
         class function Create(const b : array of byte) : BufferRef;overload; static;
         class function Create(mem: Pointer; _length: Cardinal) : BufferRef; overload; static;
         class function Create(const s : string; cp : word = CP_UTF8) : BufferRef; overload; static;
+        class function Create(const s : string; const fmt: array of const; cp : word = CP_UTF8) : BufferRef; overload; static;
         class function Create(const ref : BufferRef) : BufferRef; overload; static;
         class function Create(const list : array of BufferRef) : BufferRef; overload; static;
         class function CreateFromHex(const hexStr : UTF8String) : BufferRef; static;
@@ -181,6 +182,13 @@ begin
   end
   else
     result := Buffer.Null;
+end;
+
+class function Buffer.Create(const s: string;
+                              const fmt: array of const;
+                              cp: word): BufferRef;
+begin
+  result := Buffer.Create(Format(s,fmt),cp);
 end;
 
 { BufferRef }

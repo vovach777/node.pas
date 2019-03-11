@@ -18,6 +18,7 @@ NodeJS-like ecosystem
 * EventEmitter
 * Promises
 * JSON
+* JS-like Object/Array (experimental)
 
 There is no documentaion et. 
 You can study examples for basical usage.

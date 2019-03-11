@@ -20,7 +20,9 @@ Interface
        FParams: TNameValues;
        FPath : String;
        FfullPath : String;
-    function GetPort: word;
+       FSplitPath : TArray<String>;
+       function GetPort: word;
+       function GetSplitPath : TArray<String>;
     public
        procedure Parse(const AURL: BufferRef); overload;
        procedure Parse(const AURL: String); overload;
@@ -28,6 +30,7 @@ Interface
        function HttpHost: string;
        function IsDefaultPort: Boolean;
        function HasCredentials : Boolean;
+       function TryGetParam(const AName : String; Out AValue: String; CaseSens:Boolean = false) : Boolean;
        function ToString : string;
        property Schema : string read FSchema;
        property UserName: string read FUserName;
@@ -35,6 +38,7 @@ Interface
        property Host : string read FHost;
        property Port: word read GetPort;
        property Path: string read FPath;
+       property SplitPath : TArray<String> read GetSplitPath;
        property FullPath: string read FFullPath;
        property Params: TNameValues read FParams;
     end;
@@ -251,7 +255,10 @@ end;
 
 function TURL.ToString: string;
 begin
-   result := FSchema + '://';
+   if FSchema <> '' then
+     result := FSchema + '://'
+   else
+      result := '';
    if HasCredentials then
    begin
     result := result + _enc( FUserName )+':'+ _enc( FPassword ) +'@';
@@ -260,6 +267,23 @@ begin
    if not IsDefaultPort then
      result := result + ':' + UIntToStr(GetPort);
    result := result + _enc( FfullPath );
+end;
+
+function TURL.TryGetParam(const AName: String; out AValue: String;
+  CaseSens: Boolean): Boolean;
+var
+  i : integer;
+begin
+   result := false;
+   for I := 0 to length(FParams)-1 do
+   begin
+      if (CaseSens and UnicodeSameText(FParams[i].Value,AValue)) or
+         (not CaseSens and (FParams[i].Value=AValue)) then
+       begin
+          AValue := FParams[i].Value;
+          exit(true);
+       end;
+   end;
 end;
 
 class function TURL._DecodeURL(const s: string): string;
@@ -285,6 +309,15 @@ begin
   raise EURL.Create('Uknown Schema');
 end;
 
+function TURL.GetSplitPath: TArray<String>;
+begin
+   if not assigned(FSplitPath) then
+   begin
+      SplitString(FPath, FSplitPath, ['/']);
+   end;
+   result := FSplitPath;
+end;
+
 function TURL.HasCredentials: Boolean;
 begin
    result := (FUserName <> '') or (FPassword <> '');
@@ -301,6 +334,8 @@ end;
 
 function TURL.IsDefaultPort: Boolean;
 begin
+  if FSchema = '' then
+     exit(true);
   if SameText(FSchema,'http') and (Port = 80) then
      exit(true);
   if SameText(FSchema,'https') and (Port = 443) then
