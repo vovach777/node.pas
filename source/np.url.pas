@@ -277,8 +277,8 @@ begin
    result := false;
    for I := 0 to length(FParams)-1 do
    begin
-      if (CaseSens and UnicodeSameText(FParams[i].Value,AValue)) or
-         (not CaseSens and (FParams[i].Value=AValue)) then
+      if (CaseSens and UnicodeSameText(FParams[i].Name,AName)) or
+         (not CaseSens and (FParams[i].Name=AName)) then
        begin
           AValue := FParams[i].Value;
           exit(true);
