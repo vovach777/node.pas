@@ -18,6 +18,7 @@ interface
      function TypeName : string;
   end;
   IValue<T> = interface(IValue)
+  ['{3B7468EC-B921-43A7-BBFC-6D6CAE9D5943}']
      function this : T;
   end;
 
