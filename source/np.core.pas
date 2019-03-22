@@ -2709,7 +2709,7 @@ end;
 
 destructor TNPWatch.Destroy;
 begin
-  OutputDebugString('TNPWatch.Destroy');
+//  OutputDebugString('TNPWatch.Destroy');
   inherited;
 end;
 
@@ -2772,7 +2772,7 @@ end;
 
 destructor TNPUDP.Destroy;
 begin
-  OutputDebugString( 'TNPUDP.Destroy' );
+//  OutputDebugString( 'TNPUDP.Destroy' );
   inherited;
 end;
 
