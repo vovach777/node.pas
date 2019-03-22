@@ -18,13 +18,14 @@ interface
         function slice(offs,_size:integer) :BufferRef; overload;
         function slice(offs:integer) : BufferRef; overload;
         function slice : BufferRef; overload; inline;
+        function sliceBytes : TBytes; overload;
         procedure write(idx:integer; const buf: BufferRef);
         procedure write_as<T>(idx:integer; const v: T);
         function unpack<T> : T; overload; inline;
         function unpack<T>(idx:integer) : T; overload;inline;
         function read(idx,size:integer; var data) : integer;
         function ToString: string;
-        function ToBytes : TBytes;
+        function ToBytes : TBytes;  //return allways copy
         function ToHex : UTF8String;
         function AsUtf8String : UTF8String;
         function asRawByteString: RawByteString;
@@ -338,6 +339,25 @@ begin
   move(ref[idx],data,result);
 end;
 
+function BufferRef.sliceBytes: TBytes;
+begin
+  result := __ref__;
+  if assigned(result) then
+  begin
+    if ref = @result[0] then
+    begin
+      if length <> System.length(result) then
+         SetLength(result,length);
+    end
+    else
+    begin
+       result := copy(result, ref - PBYTE(@__ref__[0]), Length );
+    end;
+  end
+  else
+     result := ToBytes;
+end;
+
 function BufferRef.Same(const buf: BufferRef): Boolean;
 begin
   result := (length = buf.length) and CompareMem(buf.ref,ref,length);
@@ -375,7 +395,7 @@ end;
 
 function BufferRef.ToBytes: TBytes;
 begin
-  if length >= 0 then
+  if (length > 0) and (ref <> nil) then
   begin
     setLength(result, length);
     move(ref^,result[0],length);
@@ -500,8 +520,5 @@ begin
     buf := tmp;
   end;
 end;
-
-
-initialization
 
 end.

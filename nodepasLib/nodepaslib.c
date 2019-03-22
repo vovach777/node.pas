@@ -140,3 +140,20 @@ unsigned int http_parser_get_http_upgrade(const http_parser * parser) {
 unsigned int http_parser_get_flags(const http_parser * parser) {
    return parser->flags;
 }
+
+
+constants_t constants = {
+    UV_FS_O_DIRECT,
+    UV_FS_O_DIRECTORY,
+    UV_FS_O_DSYNC,
+    UV_FS_O_EXLOCK,
+    UV_FS_O_NOATIME,
+    UV_FS_O_NOCTTY,
+    UV_FS_O_NOFOLLOW,
+    UV_FS_O_NONBLOCK,
+    UV_FS_O_SYMLINK,
+    UV_FS_O_SYNC      
+};
+pconstants_t uv_get_constants() {
+     return &constants;
+}

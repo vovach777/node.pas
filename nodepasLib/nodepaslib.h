@@ -29,3 +29,18 @@ NP_API unsigned int http_parser_get_status_code(const http_parser * parser);
 NP_API unsigned int http_parser_get_http_errno(const http_parser * parser);
 NP_API unsigned int http_parser_get_http_upgrade(const http_parser * parser);
 NP_API unsigned int http_parser_get_flags(const http_parser * parser);
+
+typedef struct constants_tag {
+    int O_DIRECT;
+    int O_DIRECTORY;
+    int O_DSYNC;
+    int O_EXLOCK;
+    int O_NOATIME;
+    int O_NOCTTY;
+    int O_NOFOLLOW;
+    int O_NONBLOCK;
+    int O_SYMLINK;
+    int O_SYNC; 
+} constants_t, *pconstants_t;
+
+NP_API pconstants_t uv_get_constants();

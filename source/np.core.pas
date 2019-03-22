@@ -1,3 +1,4 @@
+{.$CAPTURE_WRITE_BUF}
 unit np.core;
 
 interface
@@ -16,6 +17,7 @@ interface
     end;
 
     TSetImmediate = function (p: Tproc): IQueueItem of object;
+    TWatchCallBack = TProc<TFS_Event,UTF8String>;
 
     TQueueItem = class(TInterfacedObject, IQueueItem)
     private
@@ -54,13 +56,14 @@ interface
     end;
 
     INPHandle = interface
-    ['{E158881A-915E-436D-966A-F7CF969E09E2}']
+    ['{DF9B5DC7-B447-45A5-9A36-C69C49214C08}']
        procedure ref;
        procedure unref;
        function  hasRef : Boolean;
        procedure setOnClose(OnClose: TProc);
        procedure Clear;
        function is_closing : boolean;
+       function is_active  : Boolean;
        function _uv_handle : puv_handle_t;
      end;
 
@@ -78,6 +81,11 @@ interface
      procedure send;
   end;
 
+  INPWatch = interface(INPHandle)
+  ['{00C99155-9FE6-4E58-AEF3-F80B20CC1233}']
+      function  getpath: UTF8String;
+      property path : UTF8String read getpath;
+  end;
 
   INPTimer = Interface(INPHandle)
   ['{A76DFCB7-01F9-460B-97D5-6D9A05A23C03}']
@@ -88,8 +96,11 @@ interface
 
   PNPError = ^TNPError;
   TNPError = record
-     code : integer;
-     msg  : string;
+     code     : integer;
+     codestr  : string;
+     msg      : string;
+     procedure Init(ACode : integer);
+     function ToString : String;
   end;
 
      INPStream = interface(INPHandle)
@@ -111,13 +122,13 @@ interface
      end;
 
     INPTCPStream = Interface(INPStream)
-    ['{AF9699FF-CC5A-4004-A19A-DF6420141D55}']
+    ['{F335DEB6-E890-4D64-90D4-A23E1A78ADD8}']
        procedure bind(const Aaddr: UTF8String; Aport: word);
        procedure bind6(const Aaddr: UTF8String; Aport: word; tcp6Only: Boolean=false);
-       function  getpeername : string;
-       procedure  getpeername_port(out name: string; out port: word);
-       function getsockname : string;
-       procedure getsockname_port(out name: string; out port: word);
+       function  getpeername : Utf8string;
+       procedure  getpeername_port(out name: Utf8string; out port: word);
+       function getsockname : Utf8string;
+       procedure getsockname_port(out name: Utf8string; out port: word);
        procedure set_nodelay(enable:Boolean);
        procedure set_simultaneous_accepts(enable:Boolean);
        procedure set_keepalive(enable:Boolean; delay:cardinal);
@@ -151,7 +162,7 @@ interface
     end;
 
       INPPipe = interface(INPStream)
-      ['{D193DA9E-C554-4908-A819-004940022E33}']
+      ['{28E78BEF-400B-4553-AC80-55417B9D94B5}']
         procedure connect(const AName: UTF8String);
         procedure bind(const AName: UTF8String);
         procedure open( fd : uv_file );
@@ -203,9 +214,11 @@ interface
        function  hasRef : Boolean;
        procedure Clear;
        function is_closing : Boolean;
-       procedure onClose; virtual;
+       function is_active : Boolean;
+       procedure onClose; virtual; //async close handle to keep sync Object with uv_handle
        function _uv_handle : puv_handle_t;
        procedure setOnClose(OnClose: TProc);
+       procedure before_closing; virtual; //sync call by Clear
      public
        constructor Create(AHandleType: uv_handle_type);
        destructor Destroy; override;
@@ -218,7 +231,9 @@ interface
       PWriteData = ^TWriteData;
       TWriteData = record
          req : uv_write_t;
+         {$IFDEF CAPTURE_WRITE_BUF}
          buf: uv_buf_t;
+         {$ENDIF}
          callback: TProc;
          streamRef: INPHandle;
 //         {$IFDEF DEBUG}
@@ -278,10 +293,10 @@ interface
     TNPTCPHandle = class(TNPStream)
        procedure bind(const Aaddr: UTF8String; Aport: word);
        procedure bind6(const Aaddr: UTF8String; Aport: word; tcp6Only: Boolean=false);
-       function  getpeername : string;
-       procedure  getpeername_port(out name: string; out port: word);
-       function getsockname : string;
-       procedure getsockname_port(out name: string; out port: word);
+       function  getpeername : UTF8String;
+       procedure  getpeername_port(out name: UTF8String; out port: word);
+       function getsockname : UTF8String;
+       procedure getsockname_port(out name: UTF8String; out port: word);
        procedure set_nodelay(enable:Boolean);
        procedure set_simultaneous_accepts(enable:Boolean);
        procedure set_keepalive(enable:Boolean; delay:cardinal);
@@ -409,7 +424,72 @@ interface
         constructor Create();
         destructor Destroy; override;
       end;
+  TUDPSendCallBack = TProc<PNPError>;
+  TUDPBindFlag = ( ubf_REUSEADDR, ubf_IPV6ONLY );
+  TUDPBindFlags = set of TUDPBindFlag;
+  TUDPRcvFlag = ( urf_PARTIAL );
+  TUDPRcvFlags = set of TUDPRcvFlag;
+  PUDPData = ^TUDPData;
+  TUDPData = record
+     from : uv_sockAddr;
+     data : BufferRef;
+     flags : TUDPRcvFlags;
+  end;
+  TUDPOnData = TProc<PNPError,PUDPData>;
+  INPUDP = Interface(INPHandle)
+  ['{DA49CDDE-3610-444A-A7D3-44590073E018}']
+       procedure open( sock: uv_os_sock_t );
+       procedure bind(const AAddr : uv_sockAddr; flags : TUDPBindFlags);
+       function  getpeername : uv_sockAddr;
+       function  getsockname : uv_sockAddr;
+       procedure connect(const sa: uv_sockAddr);
+       procedure set_membership(const multicast_addr: UTF8String; const interface_addr: UTF8String; membership : uv_membership);
+       procedure set_multicast_loop(enable : Boolean);
+       procedure set_multicast_ttl(ttl: integer);
+       procedure set_multicast_interface(const interface_addr: UTF8String);
+       procedure set_broadcast(enable : Boolean);
+       procedure set_ttl(ttl:integer);
+      // procedure send(const buf: BufferRef; addr: puv_sockAddr; const callback: TUDPSendCallBack);overload;
+       procedure send(const buf: BufferRef; const callback: TUDPSendCallBack); overload;
+       procedure send(const buf: BufferRef; const addr: uv_sockAddr; const callback: TUDPSendCallBack); overload;
+       procedure try_send(const buf: BufferRef; const addr: uv_sockAddr); overload;
+       procedure try_send(const buf: BufferRef); overload;
+       procedure setOnData(const onData: TUDPOnData);
+       function get_send_queue_size : size_t;
+       function get_send_queue_count : size_t;
+  end;
 
+  TNPUDP = class(TNPBaseHandle, INPUDP)
+  private
+       FOnData:  TUDPOnData;
+       __buf:    TBytes;
+  protected
+       procedure open( sock: uv_os_sock_t );
+       function  uvudp : puv_udp_t; inline;
+       procedure bind(const Aaddr: uv_sockAddr; flags : TUDPBindFlags);
+       function  getpeername : uv_sockAddr;
+       function  getsockname : uv_sockAddr;
+       procedure connect(const sa: uv_sockAddr);
+       procedure set_membership(const multicast_addr: UTF8String; const interface_addr: UTF8String; membership : uv_membership);
+       procedure set_multicast_loop(enable : Boolean);
+       procedure set_multicast_ttl(ttl: integer);
+       procedure set_multicast_interface(const interface_addr: UTF8String);
+       procedure before_closing; override;
+       procedure OnClose; override;
+       procedure set_broadcast(enable : Boolean);
+       procedure set_ttl(ttl:integer);
+       procedure send(const buf: BufferRef; const callback: TUDPSendCallBack); overload;
+       procedure send(const buf: BufferRef; const addr: uv_sockAddr; const callback: TUDPSendCallBack); overload;
+       procedure send(const buf: BufferRef; addr: puv_sockAddr; const callback: TUDPSendCallBack); overload;
+       procedure try_send(const buf: BufferRef;const addr: uv_sockAddr); overload;
+       procedure try_send(const buf: BufferRef); overload;
+       procedure setOnData(const onData: TUDPOnData);
+       function get_send_queue_size : size_t;
+       function get_send_queue_count : size_t;
+  public
+       constructor Create();
+       destructor Destroy(); override;
+  end;
 
   function newRWLock : IRWLock;
 
@@ -422,6 +502,8 @@ interface
   procedure Cleartimer(var handle: INPTimer);
   function SetInterval(p: Tproc; AInterval: Uint64): INPTimer;
   function SetTimeout(p: Tproc; ATimeout: Uint64): INPTimer;
+
+  function setFSWatch(p: TWatchCallBack; const Path: UTF8String; flag:Integer=0) : INPWatch;
 
   function thread_create(p : TProc) : uv_thread_t;
   procedure thread_join(tid: uv_thread_t);
@@ -440,6 +522,14 @@ interface
 
   procedure dns_resolve(const addr: UTF8String; const onResolved: TProc<integer,UTF8String>);
 
+type
+  TNPBarrier = record
+    uvbarrier: uv_barrier_t;
+    procedure Init( ACount : integer );
+    procedure wait;
+  end;
+
+
 const
   ev_loop_shutdown = 1;
   ev_loop_beforeTerminate = 2;
@@ -453,7 +543,9 @@ const
 
 implementation
  {$IFDEF MSWINDOWS}
-  uses windows;
+  uses windows, np.fs;
+{$ELSE}
+  uses np.fs;
  {$ENDIF}
 
 type
@@ -504,7 +596,6 @@ type
   TNPTTY_INPUT = class( TNPStream )
     constructor Create(raw:Boolean=false);
   end;
-
 
    threadvar
      tv_loop : TLoop;
@@ -1142,14 +1233,15 @@ begin
   np_ok( uv_tcp_bind(puv_tcp_t(FHandle),addr,ord(tcp6Only)) );
 end;
 
-function TNPTCPHandle.getpeername: string;
+function TNPTCPHandle.getpeername: UTF8String;
 var
   port : word;
 begin
+  result := '';
   getpeername_port(result,port);
 end;
 
-procedure TNPTCPHandle.getpeername_port(out name: string; out port: word);
+procedure TNPTCPHandle.getpeername_port(out name: UTF8String; out port: word);
 var
   sa: Tsockaddr_in_any;
   len : integer;
@@ -1174,14 +1266,14 @@ begin
   port := uv_get_ip_port(  Psockaddr_in(@sa) );
 end;
 
-function TNPTCPHandle.getsockname: string;
+function TNPTCPHandle.getsockname: Utf8string;
 var
   port : word;
 begin
   getsockname_port(result, port);
 end;
 
-procedure TNPTCPHandle.getsockname_port(out name: string; out port: word);
+procedure TNPTCPHandle.getsockname_port(out name: UTF8String; out port: word);
 var
   sa: Tsockaddr_in_any;
   len : integer;
@@ -1404,8 +1496,7 @@ begin
   FOnEnd := nil;
   if assigned(FOnError) then
   begin
-    err.code := status;
-    err.msg := Format('%s:%s!', [uv_err_name(status), uv_strerror(status)]);
+    err.Init(status);
     FOnError(@err);
   end;
   FOnError := nil;
@@ -1439,11 +1530,13 @@ begin
 //     sleep(0);
 //  end;
 
+{$IFDEF CAPTURE_WRITE_BUF}
   if (wd.buf.len > 0) then
   begin
       assert( wd.buf.base <> nil );
       FreeMem( wd.buf.base );
   end;
+{$ENDIF}
   dispose(wd);
 end;
 
@@ -1574,35 +1667,48 @@ procedure TNPStream.writeInternal(data: PByte; len: Cardinal; ACallBack: TProc; 
 var
   wd : PWriteData;
   status : integer;
+{$IFNDEF CAPTURE_WRITE_BUF}
+   buf : uv_buf_t;
+{$ENDIF}
 begin
-//  if len > 0 then
-//  begin
     new(wd);
     wd.callback := ACallBack;
-//    {$IFDEF DEBUG}
-//    wd.debugInfo := debugInfoValue;
-//    debugInfoValue := 0;
-//    {$ENDIF}
     uv_set_user_data(wd, self);
     if len > 0 then
     begin
       assert(data <> nil);
+    {$IFDEF CAPTURE_WRITE_BUF}
       wd.buf.len := len;
       GetMem( wd.buf.base, len );
       move( data^, wd.buf.base^, len );
+     {$ELSE}
+        buf.len := len;
+        buf.base := data;
+     {$ENDIF}
     end
     else
     begin
+    {$IFDEF CAPTURE_WRITE_BUF}
       wd.buf.len := 0;
       wd.buf.base := nil;
+     {$ELSE}
+       buf.len := 0;
+       buf.base := nil;
+     {$ENDIF}
     end;
     wd.streamRef := self;
     if send_handle = nil then
-      status := uv_write(puv_write_t(wd),FStream, @wd.buf, 1, @__write_cb)
+      status := uv_write(puv_write_t(wd),FStream, {$IFDEF CAPTURE_WRITE_BUF} @wd.buf {$ELSE} @buf {$ENDIF}, 1, @__write_cb)
     else
-      status := uv_write2(puv_write_t(wd),FStream, @wd.buf, 1, puv_stream_t( send_handle._uv_handle ), @__write_cb);
+      status := uv_write2(puv_write_t(wd),FStream, {$IFDEF CAPTURE_WRITE_BUF} @wd.buf {$ELSE} @buf {$ENDIF}, 1, puv_stream_t( send_handle._uv_handle ), @__write_cb);
     if status <> 0 then
-      _writecb(wd, status);
+    begin
+      NextTick(
+         procedure
+         begin
+           _writecb(wd, status);
+         end);
+    end;
 //  end;
 end;
 
@@ -1635,10 +1741,16 @@ end;
 
 { TNPBaseHandle }
 
+procedure TNPBaseHandle.before_closing;
+begin
+
+end;
+
 procedure TNPBaseHandle.Clear;
 begin
   if not is_closing then
   begin
+    before_closing;
     uv_close( Fhandle, uv_get_close_cb( Fhandle) );
   end;
 end;
@@ -1649,20 +1761,22 @@ var
 begin
   inherited Create;
   HandleType := AHandleType;
-  case  HandleType  of
-      UV_ASYNC         : typeLen := sizeof_async_t;
-      UV_CHECK         : typeLen := sizeof_check_t;
-      UV_IDLE          : typeLen := sizeof_idle_t;
-      UV_NAMED_PIPE    : typeLen := sizeof_pipe_t;
-      UV_PREPARE       : typeLen := sizeof_prepare_t;
-      UV_STREAM        : typeLen := sizeof_stream_t;
-      UV_TCP           : typeLen := sizeof_tcp_t;
-      UV_TIMER         : typeLen := sizeof_timer_t;
-      UV_PROCESS       : typeLen := sizeof_process_t;
-      UV_TTY           : typeLen := sizeof_tty_t;
-      else
-          assert(false, Format('type %d not supported',[ord(HandleType)]));
-  end;
+  typeLen := uv_handle_size(AHandleType);
+//  case  HandleType  of
+//      UV_ASYNC         : typeLen := sizeof_async_t;
+//      UV_CHECK         : typeLen := sizeof_check_t;
+//      UV_IDLE          : typeLen := sizeof_idle_t;
+//      UV_NAMED_PIPE    : typeLen := sizeof_pipe_t;
+//      UV_PREPARE       : typeLen := sizeof_prepare_t;
+//      UV_STREAM        : typeLen := sizeof_stream_t;
+//      UV_TCP           : typeLen := sizeof_tcp_t;
+//      UV_TIMER         : typeLen := sizeof_timer_t;
+//      UV_PROCESS       : typeLen := sizeof_process_t;
+//      UV_TTY           : typeLen := sizeof_tty_t;
+//      else
+//
+//          assert(false, Format('type %d not supported',[ord(HandleType)]));
+//  end;
   GetMem(FHandle, typeLen);
   FillChar(FHandle^,typeLen,0);
   uv_set_close_cb(Fhandle, @__on_close);
@@ -1684,6 +1798,11 @@ end;
 function TNPBaseHandle.hasRef: Boolean;
 begin
   result := uv_has_ref(Fhandle) <> 0;
+end;
+
+function TNPBaseHandle.is_active: Boolean;
+begin
+   result := uv_is_active(FHandle) <> 0;
 end;
 
 function TNPBaseHandle.is_closing: Boolean;
@@ -1815,6 +1934,18 @@ end;
   begin
     result := loop.setImmediate(p)
   end;
+
+type
+     TNPWatch = Class(TNPBaseHandle, INPWatch)
+     protected
+         procedure onClose; override;
+         procedure before_closing; override;
+     public
+       FCallBack : TWatchCallBack;
+      function  getpath: UTF8String;
+       constructor Create(ACallBack: TWatchCallBack; const APath: UTF8String; flags : integer);
+       destructor Destroy; override;
+     end;
 
 
 { TNPTCPStream }
@@ -2203,37 +2334,9 @@ begin
     flush;
 end;
 
-procedure write_cb(req: puv_write_t; status: integer); cdecl;
-var
-  wr: P_tty_w_req;
-begin
-  wr := P_tty_w_req(req);
-// if status < 0 then
-// begin
-  //WriteLn('write_cb => "',uv_strerror( status ),'" msg:',wr.msg );
-// end;
-  wr.msg := '';
-  Dispose(wr);
-end;
-
-type
-   pnp_fs = ^Tnp_fs;
-   Tnp_fs = record
-      base: uv_fs_t;
-      buf:  UTF8String;
-   end;
-
-procedure cb_fs_write(req: pnp_fs); cdecl;
-begin
-//  OutputDebugString(PChar(Format('"%s" write succes"',[req.buf])));
-  req.buf := '';
-  Dispose(req);
-end;
-
 procedure TNPSTDOUT.flush;
 var
-   req: pNP_fs;
-   buf: uv_buf_t;
+   buf: TBytes;
 begin
   if pBuf = '' then
     exit;
@@ -2242,17 +2345,9 @@ begin
   else
   if is_file then
   begin
-    new(req);
-    fillchar(req^,sizeof( req^), 0);
-    req.buf := pBuf;
-    buf.base := @req.buf[1];
-    buf.len := length(req.buf);
-//    try
-      np_ok( uv_fs_write(loop.uvloop, @req.base, FUVFile, @buf, 1, -1, @cb_fs_write) );
-//    except
-//      on E:Exception do
-//        OutputDebugString(PChar(E.Message));
-//    end;
+    SetLength(buf,length(pbuf));
+    move(pbuf[1],buf[0], length(pbuf));
+    fs.write(FUVFile,buf,nil);
   end;
   pbuf := '';
 end;
@@ -2543,6 +2638,369 @@ end;
      tv_stdin := TNPTTY_INPUT.Create(true);
     result := tv_stdIn;
   end;
+
+{ TNPBarrier }
+
+procedure TNPBarrier.Init(ACount: integer);
+begin
+     uv_barrier_init(@uvbarrier,Acount);
+end;
+
+procedure TNPBarrier.wait;
+begin
+    if uv_barrier_wait(@uvbarrier) > 0 then
+    begin
+      uv_barrier_destroy(@uvbarrier);
+    end;
+end;
+
+
+{ TNPError }
+
+procedure TNPError.Init(ACode: integer);
+begin
+  code := ACode;
+  codestr := CStrUtf8( uv_err_name(Acode) );
+  msg := CStrUtf8( uv_strerror(Acode) );
+end;
+
+function TNPError.ToString: String;
+begin
+  result := Format('%s (%d) : "%s"',[codestr, code, msg] );
+end;
+
+procedure __event_cb(handle : puv_fs_event_t; const filename: PUTF8Char; events:integer;status : integer); cdecl;
+var
+  ev : TFS_Event;
+  ud : TNPWatch;
+begin
+  if status = 0 then
+  begin
+    ev := [];
+    if (events and UV_RENAME) <> 0 then
+      include(ev,feRename);
+    if (events and UV_CHANGE) <> 0 then
+      include(ev,feChange);
+    ud := uv_get_user_data(puv_handle_t( handle) );
+    if assigned(ud) and assigned(ud.FCallBack) then
+    begin
+      ud.FCallBack( ev, CStrUtf8(filename) );
+    end;
+  end;
+end;
+
+{ TNPWatch }
+
+procedure TNPWatch.before_closing;
+begin
+  if is_active then
+    uv_fs_event_stop( puv_fs_event_t( FHandle ) );
+end;
+
+constructor TNPWatch.Create(ACallBack: TWatchCallBack; const APath: UTF8String;
+  flags: integer);
+begin
+   inherited Create(UV_FS_EVENT_);
+   np_ok( uv_fs_event_init(loop.uvloop,puv_fs_event_t( FHandle) ) );
+   np_ok( uv_fs_event_start(puv_fs_event_t( FHandle), @__event_cb, @APath[1], flags ) );
+   FCallBack := ACallBack;
+   FActiveRef := self;
+end;
+
+destructor TNPWatch.Destroy;
+begin
+  OutputDebugString('TNPWatch.Destroy');
+  inherited;
+end;
+
+function TNPWatch.getpath: UTF8String;
+var
+  sz : size_t;
+begin
+  sz := 1024;
+  setLength(result,sz);
+  if uv_fs_event_getpath(  puv_fs_event_t( FHandle ), @result[1], sz ) < 0 then
+     SetLength(result,0)
+  else
+     SetLength(result, sz);
+end;
+
+procedure TNPWatch.onClose;
+begin
+  FCallBack := nil;
+  inherited;
+  if is_active then
+    uv_fs_event_stop( puv_fs_event_t( FHandle ) );
+end;
+
+  function setFSWatch(p: TWatchCallBack; const Path: UTF8String; flag:Integer) : INPWatch;
+  begin
+     result := TNPWatch.Create(p,path,flag);
+  end;
+
+
+{ TNPUDP }
+
+procedure TNPUDP.before_closing;
+begin
+  setOnData(nil);
+end;
+
+procedure TNPUDP.bind(const Aaddr: uv_sockAddr;  flags: TUDPBindFlags);
+var
+  lflags : Cardinal;
+begin
+   lflags := 0;
+   if ubf_REUSEADDR in flags then
+     lflags := lflags or UV_UDP_REUSEADDR;
+   if ubf_IPV6ONLY in flags then
+     lflags := lflags or UV_UDP_IPV6ONLY;
+   np_ok( uv_udp_bind(uvudp,AAddr.sa, lflags ) );
+end;
+
+procedure TNPUDP.connect(const sa: uv_sockAddr);
+begin
+ np_ok( uv_udp_connect(uvudp, sa.sa ) );
+end;
+
+constructor TNPUDP.Create;
+begin
+   inherited Create(UV_UDP);
+   np_ok( uv_udp_init(loop.uvloop, puv_udp_t( FHandle ) ));
+   FActiveRef := self;
+end;
+
+destructor TNPUDP.Destroy;
+begin
+  OutputDebugString( 'TNPUDP.Destroy' );
+  inherited;
+end;
+
+function TNPUDP.getpeername: uv_sockAddr;
+var
+  len : integer;
+begin
+  len := sizeof(result);
+  np_ok( uv_udp_getpeername( uvudp, @result.sa, len ));
+end;
+
+function TNPUDP.getsockname: uv_sockAddr;
+var
+  len : integer;
+begin
+  len := sizeof(result);
+  np_ok( uv_udp_getsockname( uvudp, @result.sa, len ) );
+end;
+
+function TNPUDP.get_send_queue_count: size_t;
+begin
+  result := uv_udp_get_send_queue_count(uvudp);
+end;
+
+function TNPUDP.get_send_queue_size: size_t;
+begin
+  result := uv_udp_get_send_queue_size(uvudp);
+end;
+
+
+procedure TNPUDP.OnClose;
+begin
+  inherited;
+  setOnData(nil);
+end;
+
+procedure TNPUDP.open(sock: uv_os_sock_t);
+begin
+  np_ok( uv_udp_open( uvudp, sock ) );
+end;
+
+procedure __alloc_udp_cb(handle:puv_handle_t;suggested_size:size_t; var buf:uv_buf_t );cdecl;
+var
+  udpImpl : TNPUDP;
+begin
+  udpImpl := uv_get_user_data(handle);
+  assert(assigned(udpImpl));
+  if suggested_size > length(udpImpl.__buf) then
+  begin
+    Setlength(udpImpl.__buf, suggested_size);
+  end;
+  buf.len := suggested_size;
+  buf.base := @udpImpl.__buf[0];
+end;
+
+procedure __rcv_udp_cb(handle: puv_udp_t; nread:ssize_t; buf: uv_buf_t; sockaddr: PSockAddr_in_any; flags: Cardinal);cdecl;
+var
+  udpImpl : TNPUDP;
+  res : TUDPData;
+  err: TNPError;
+begin
+  udpImpl := uv_get_user_data(handle);
+  assert(assigned(udpImpl));
+  res := default(TUDPData);
+  if assigned(sockaddr) and (nread >=0) then
+  begin
+    res.from.Assign(sockaddr);
+    res.data := BufferRef.CreateWeakRef(buf.base, nread);
+    if (flags and UV_UDP_PARTIAL) <> 0 then
+       include( res.flags, urf_PARTIAL );
+     if assigned(udpImpl.FOnData) then
+       udpImpl.FOnData(nil,@res);
+  end
+  else
+  if nread < 0 then
+  begin
+     err.Init(nread);
+     if assigned(udpImpl.FOnData) then
+       udpImpl.FOnData(@err,nil);
+  end;
+
+end;
+
+procedure TNPUDP.setOnData(const onData: TUDPOnData);
+var
+  res: Integer;
+begin
+  if assigned(FOnData) then
+  begin
+     FOnData := onData;
+     if not assigned( FOnData ) then
+     begin
+        uv_udp_recv_stop(uvudp);
+     end;
+  end
+  else
+  begin
+     if assigned(onData) then
+     begin
+       res := uv_udp_recv_start(uvudp, @__alloc_udp_cb,@__rcv_udp_cb);
+       if res <> 0 then
+       begin
+         if  CStrUtf8( uv_err_name(res) ) <> 'EALREADY' then
+            np_ok(res);
+       end;
+       FOnData := onData;
+     end;
+  end;
+end;
+
+type
+  PUdpSendData = ^TUdpSendData;
+  TUdpSendData = record
+      send_req : TBytes;
+      callback : TUDPSendCallBack;
+      this_ref : INPUDP;
+  end;
+
+procedure __send_udp_cb(req : puv_udp_send_t; status : integer);cdecl;
+var
+   cast : PUdpSendData;
+   error : TNPError;
+begin
+  cast := PUdpSendData(uv_req_get_data(puv_req_t(req)));
+  assert( assigned(cast) );
+  assert( assigned(cast.callback) );
+  assert( assigned(cast.this_ref ));
+  try
+    if status = 0 then
+      cast.callback(nil)
+    else
+    begin
+      error.Init(status);
+      cast.callback(@error);
+    end;
+  finally
+     Dispose(cast);
+  end;
+end;
+
+ procedure TNPUDP.send(const buf: BufferRef; const callback: TUDPSendCallBack);
+ begin
+    send(buf,nil,callback);
+ end;
+
+ procedure TNPUDP.send(const buf: BufferRef; const addr: uv_sockAddr; const callback: TUDPSendCallBack);
+ begin
+    send(buf,puv_sockAddr(@addr),callback);
+ end;
+
+
+procedure TNPUDP.send(const buf: BufferRef; addr: puv_sockAddr; const callback: TUDPSendCallBack);
+var
+  lbuf : uv_buf_t;
+  send_req_data: PUdpSendData; //self captured record
+  send_req : puv_udp_send_t;
+  res : Integer;
+begin
+  lbuf.len := buf.length;
+  lbuf.base := buf.ref;
+
+//  GetMem(send_req, uv_req_size(UV_UDP_SEND_) );
+   if assigned(callback) then
+   begin
+     new( send_req_data );
+     SetLength( send_req_data.send_req , uv_req_size(UV_UDP_SEND_) );
+     send_req := puv_udp_send_t(  @send_req_data.send_req[0] );
+     send_req_data.callback := callback;
+     send_req_data.this_ref := self;
+     uv_req_set_data(puv_req_t(send_req), send_req_data);
+     res := uv_udp_send(send_req,uvudp ,@lbuf,1,psockaddr( addr ),@__send_udp_cb ) ;
+     if res <> 0 then
+       NextTick(
+         procedure
+         begin
+            __send_udp_cb(send_req,res);
+         end);
+   end
+   else
+     uv_udp_try_send(uvudp,@lbuf,1,psockaddr( addr ) );
+end;
+
+procedure TNPUDP.try_send(const buf: BufferRef; const addr: uv_sockAddr);
+begin
+   send(buf,addr,nil);
+end;
+
+procedure TNPUDP.try_send(const buf: BufferRef);
+begin
+  send(buf,nil,nil);
+end;
+
+procedure TNPUDP.set_broadcast(enable: Boolean);
+begin
+  np_ok( uv_udp_set_broadcast(uvudp, ord(enable) ) );
+end;
+
+procedure TNPUDP.set_membership(const multicast_addr,
+  interface_addr: UTF8String; membership: uv_membership);
+begin
+  np_ok( uv_udp_set_membership(uvudp,PUTF8Char( multicast_addr ),PUTF8Char(interface_addr), membership) );
+end;
+
+procedure TNPUDP.set_multicast_interface(const interface_addr: UTF8String);
+begin
+  np_ok( uv_udp_set_multicast_interface(uvudp, PUTF8Char(interface_addr)) );
+end;
+
+procedure TNPUDP.set_multicast_loop(enable: Boolean);
+begin
+  np_ok( uv_udp_set_multicast_loop(uvudp, ord(enable)) );
+
+end;
+
+procedure TNPUDP.set_multicast_ttl(ttl: integer);
+begin
+  np_ok( uv_udp_set_multicast_ttl(uvudp, ttl) );
+end;
+
+procedure TNPUDP.set_ttl(ttl: integer);
+begin
+  np_ok( uv_udp_set_ttl(uvudp, ttl) );
+end;
+
+function TNPUDP.uvudp: puv_udp_t;
+begin
+   result := puv_udp_t( FHandle );
+end;
 
 end.
 

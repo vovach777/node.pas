@@ -76,7 +76,6 @@ type
 function macros(const templ: string; const macroOpen,macroClose: string; const mapFunc : TTokenMap; macroInsideMacro:Boolean=false ) : string;
 function trimar(const ar: TArray<string>) : TArray<string>;
 
-
 implementation
     uses
       {$IFDEF MSWINDOWS}

@@ -1,7 +1,7 @@
 unit np.common;
 
 interface
-
+  uses SysUtils;
 
 const
 {$IFDEF LINUX64}
@@ -34,14 +34,14 @@ type
   THex3 = $100..$FFF;
 
 
-
 function h2o(h:THex1) : word; inline; overload;
 function h2o(h:THex2) : word; inline; overload;
 function h2o(h:THex3) : word; inline; overload;
 
 function CStrLen(const str: PAnsiChar) : SIZE_T;
+function CStrUtf8( const p: PUtf8Char) : UTF8String;
 
-
+procedure scope(const proc: TProc );
 
 
 implementation
@@ -72,5 +72,18 @@ begin
     inc(ch);
   result := (ch-str);
 end;
+
+function CStrUtf8( const p: PUtf8Char) : UTF8String;
+begin
+   result := UTF8String(p);
+end;
+
+
+procedure scope(const proc: TProc );
+begin
+  if assigned(proc) then
+    proc();
+end;
+
 
 end.

@@ -17,6 +17,7 @@ interface
      function ToString : string;
      function TypeName : string;
   end;
+
   IValue<T> = interface(IValue)
   ['{3B7468EC-B921-43A7-BBFC-6D6CAE9D5943}']
      function this : T;
@@ -36,7 +37,6 @@ interface
   end;
 
   TValue<T> = class(TInterfacedObject, IValue)
-     var
      Value : T;
      _typeName : string;
      constructor Create(const AValue: T; const AtypeName: string = '');
@@ -724,7 +724,7 @@ var
 begin
   ar := Value.ToArray;
   if Length(ar) = 0 then
-    exit('');
+    exit('{}');
   sb := TStringBuilder.Create;
   try
      sb.Append('{');
@@ -1325,6 +1325,7 @@ begin
     end;
   end
   else
+    raise Exception.Create('Exception is ready raised! The reference exception was lost!');
 end;
 
 function TObjectValue<T>.ToString: string;

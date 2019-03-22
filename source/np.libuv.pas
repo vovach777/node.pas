@@ -62,6 +62,7 @@ const
   psockaddr = ^Tsockaddr_in;
   PSockAddr_In = ^Tsockaddr_in;
   psockaddr_In6 = ^Tsockaddr_in6;
+  PSockAddr_in_any = ^TSockAddr_in_any;
   TSockAddr_in_any = record
                         case integer of
                            UV_AF_INET:
@@ -69,16 +70,22 @@ const
                            UV_AF_INET6:
                                 ( ip6 : Tsockaddr_in6);
                      end;
-  PSockAddr_in_any = ^TSockAddr_in_any;
 
-
-  { TODO: add
-    paddrinfo = iocp.winsock2.addrinfo;
-    psockaddr = iocp.winsock2.psockaddr;
-    PSockAddrIn = iocp.winsock2.PSockAddrIn;
-    psockaddr_in6 = iocp.winsock2.psockaddr_in6;
-  }
-
+  puv_sockAddr = ^uv_sockAddr;
+  uv_sockAddr = record
+    sa : TSockAddr_in_any;
+    function GetAddr : UTF8String;
+    procedure SetAddr(const Aaddr : UTF8String);
+    function GetPort : word;
+    procedure SetPort( Aport: word);
+    function isIP6 : Boolean;
+    function ToString : String;
+    procedure Assign(addr: PSockAddr_in_any);
+    class function Create(const Aaddr: UTF8String; Aport: word) : uv_sockAddr; static;
+    procedure Init(const Aaddr: UTF8String; Aport: word);
+    property Port : word read GetPort write SetPort;
+    property Addr : UTF8String read GetAddr write SetAddr;
+  end;
 
   uv_handle_type = (UV_UNKNOWN_HANDLE = 0, UV_ASYNC, UV_CHECK, UV_FS_EVENT_,
     UV_FS_POLL, UV_HANDLE, UV_IDLE, UV_NAMED_PIPE, UV_POLL, UV_PREPARE,
@@ -177,11 +184,50 @@ const
   _O_CREAT = $100; (* Create the file if it does not exist. *)
   _O_TRUNC = $200; (* Truncate the file if it does exist. *)
   _O_EXCL  = $400; (* Open only if the file does not exist. *)
+  _O_RANDOM = 0;
+
   _S_IRUSR       = $100;
   _S_IWUSR       = $80;
   _S_IXUSR       = $40;
   _S_IRWUSR      = _S_IRUSR or _S_IWUSR;
   _S_IRWXU       = _S_IRUSR or _S_IWUSR or _S_IXUSR;
+
+   F_OK = 0;
+   R_OK = 4;
+   W_OK = 2;
+   X_OK = 1;
+
+   {$if defined(_O_APPEND)}
+   UV_FS_O_APPEND  =    _O_APPEND;
+   {$endif}
+   UV_FS_O_CREAT   =    _O_CREAT;
+   UV_FS_O_EXCL    =    _O_EXCL;
+   UV_FS_O_RANDOM  =    _O_RANDOM;
+   UV_FS_O_RDONLY  =    _O_RDONLY;
+   UV_FS_O_RDWR    =    _O_RDWR;
+   {$if defined(_O_SEQUENTIAL)}
+   UV_FS_O_SEQUENTIAL = _O_SEQUENTIAL;
+   {$endif}
+   {$if defined(_O_SHORT_LIVED)}
+   UV_FS_O_SHORT_LIVED = _O_SHORT_LIVED;
+   {$endif}
+   {$if defined(_O_TEMPORARY)}
+   UV_FS_O_TEMPORARY  = _O_TEMPORARY;
+   {$endif}
+   UV_FS_O_TRUNC    =   _O_TRUNC;
+   UV_FS_O_WRONLY   =   _O_WRONLY;
+
+(* fs open() flags supported on other platforms (or mapped on this platform): *)
+    UV_FS_O_DIRECT   =    FILE_FLAG_NO_BUFFERING; (* FILE_FLAG_NO_BUFFERING *)
+    UV_FS_O_DIRECTORY  =  0;
+    UV_FS_O_DSYNC      =  FILE_FLAG_WRITE_THROUGH;
+    UV_FS_O_EXLOCK     =  $10000000; (* EXCLUSIVE SHARING MODE *)
+    UV_FS_O_NOATIME    =  0;
+    UV_FS_O_NOCTTY     =  0;
+    UV_FS_O_NOFOLLOW   =  0;
+    UV_FS_O_NONBLOCK   =  0;
+    UV_FS_O_SYMLINK    =  0;
+    UV_FS_O_SYNC       =  FILE_FLAG_WRITE_THROUGH;
 
 
 type
@@ -215,7 +261,7 @@ type
   uv_buf_t = record
           case boolean of
              true : (cast: WSABUF);
-             false: ( len: size_t;
+             false: ( len: {size_t}u_long;
                       base: PByte; );
        end;
 const
@@ -288,6 +334,34 @@ UV_STDERR_FD  = 2;
   _S_IXUSR       = S_IXUSR;
   _S_IRWUSR      = S_IRUSR or S_IWUSR;
   _S_IRWXU       = S_IRUSR or S_IWUSR or S_IXUSR;
+
+(* fs open() flags supported on this platform: *)
+   UV_FS_O_APPEND =      O_APPEND;
+   UV_FS_O_CREAT  =      O_CREAT;
+   UV_FS_O_DIRECT =      O_DIRECT;
+   {$if defined(O_DIRECTORY)}
+   UV_FS_O_DIRECTORY =   O_DIRECTORY;
+   {$endif}
+    UV_FS_O_DSYNC   =     O_DSYNC;
+    UV_FS_O_EXCL    =     O_EXCL;
+    UV_FS_O_EXLOCK  =     O_EXLOCK;
+    UV_FS_O_NOATIME =     O_NOATIME;
+    UV_FS_O_NOCTTY  =     O_NOCTTY;
+    UV_FS_O_NOFOLLOW =    O_NOFOLLOW;
+    UV_FS_O_NONBLOCK  =   O_NONBLOCK;
+    UV_FS_O_RDONLY   =    O_RDONLY;
+    UV_FS_O_RDWR    =     O_RDWR;
+    UV_FS_O_SYMLINK  =    O_SYMLINK;
+    UV_FS_O_SYNC     =    O_SYNC;
+    UV_FS_O_TRUNC    =    O_TRUNC;
+    UV_FS_O_WRONLY   =    O_WRONLY;
+
+ (* fs open() flags supported on other platforms: *)
+    UV_FS_O_RANDOM     =   0;
+    UV_FS_O_SHORT_LIVED=   0;
+    UV_FS_O_SEQUENTIAL =   0;
+    UV_FS_O_TEMPORARY  =   0;
+
 
  type
   SIZE_T = NativeUInt;
@@ -420,7 +494,7 @@ type
   uv_exit_cb = procedure(process: puv_process_t; exit_status: Int64;
     term_signal: Integer); cdecl;
   puv_fs_event_t = ^uv_fs_event_t;
-  uv_fs_event_cb = procedure(handle: puv_fs_event_t; filename: pchar;
+  uv_fs_event_cb = procedure(handle: puv_fs_event_t; filename: PUTF8Char;
     Events: Integer; Status: Integer); cdecl;
   puv_signal_t = ^uv_signal_t;
   uv_signal_cb = procedure(handle: puv_signal_t; signum: Integer); cdecl;
@@ -593,7 +667,7 @@ type
     UV_FS_CHMOD_, UV_FS_FCHMOD_, UV_FS_FSYNC_, UV_FS_FDATASYNC_, UV_FS_UNLINK_,
     UV_FS_RMDIR_, UV_FS_MKDIR_, UV_FS_MKDTEMP_, UV_FS_RENAME_, UV_FS_SCANDIR_,
     UV_FS_LINK_, UV_FS_SYMLINK_, UV_FS_READLINK_, UV_FS_CHOWN_, UV_FS_FCHOWN_,
-    UV_FS_REALPATH_);
+    UV_FS_LCHOWN_, UV_FS_REALPATH_, UV_FS_COPYFILE_);
 
   uv_timespec_t = record
     tv_sec: Integer;
@@ -632,7 +706,7 @@ type
                cb: uv_fs_cb;
                result : ssize_t;
                ptr: Pointer;
-               path: PAnsiChar;
+               path: PUTF8Char;
                statbuf: uv_stat_t; );
   end;
 
@@ -676,6 +750,7 @@ type
           (netmask4: Tsockaddr_in;);
         1:
           (netmask6: Tsockaddr_in6;);
+    { uv_once_t }
 end;
   end;
 
@@ -708,9 +783,11 @@ end;
 
   uv_loop_t = uv_loop_s;
 
+function UV_ONCE_INIT : uv_once_t;
+
 function uv_version: UInt; cdecl;
 
-function uv_version_string: pchar; cdecl;
+function uv_version_string: PUTF8Char; cdecl;
 
 type
   uv_malloc_func = function(size: SIZE_T): pointer; cdecl;
@@ -772,7 +849,7 @@ type
   uv_getaddrinfo_cb = procedure(req: puv_getaddrinfo_t; Status: Integer;
     res: PADDRINFO); cdecl;
   uv_getnameinfo_cb = procedure(req: puv_getnameinfo_t; Status: Integer;
-    hostname: pchar; service: pchar); cdecl;
+    hostname: PUTF8Char; service: PUTF8Char); cdecl;
   uv_fs_poll_cb = procedure(handle: puv_fs_poll_t; Status: Integer;
     prev: puv_stat_t; curr: puv_stat_t); cdecl;
 
@@ -787,7 +864,12 @@ function uv_shutdown(req: puv_shutdown_t; handle: puv_stream_t;
 
 function uv_handle_size(&type: uv_handle_type): SIZE_T; cdecl;
 
+function uv_cancel(req: puv_req_t): Integer; cdecl;
 function uv_req_size(&type: uv_req_type): SIZE_T; cdecl;
+function uv_req_get_data(const req: puv_req_t ) : Pointer;cdecl;
+procedure uv_req_set_data(const req: puv_req_t; data:Pointer); cdecl;
+function uv_req_get_type(const req: puv_req_t ) : uv_req_type; cdecl;
+function uv_req_type_name(const req: puv_req_t ) : PAnsiChar; cdecl;
 
 function uv_is_active(handle: puv_handle_t): Integer; cdecl;
 
@@ -882,15 +964,16 @@ function uv_tcp_connect(req: puv_connect_t; handle: puv_tcp_t; addr: psockaddr_i
 (*
   * UDP support.
 *)
-type
-  uv_udp_flags = (
+const
+//  uv_udp_flags = (
     (* Disables dual stack mode. *)
-    UV_UDP_IPV6ONLY = 1, UV_UDP_PARTIAL = 2,
+    UV_UDP_IPV6ONLY = 1;
+    UV_UDP_PARTIAL = 2;
     (*
       * Indicates message was truncated because read buffer was too small. The
       * remainder was discarded by the OS. Used in uv_udp_recv_cb.
     *)
-    UV_UDP_REUSEADDR = 4
+    UV_UDP_REUSEADDR = 4;
     (*
       * Indicates if SO_REUSEADDR will be set when binding the handle.
       * This sets the SO_REUSEPORT socket flag on the BSDs and OS X. On other
@@ -899,7 +982,7 @@ type
       * (provided they all set the flag) but only the last one to bind will receive
       * any traffic, in effect "stealing" the port from the previous listener.
     *)
-    );
+//    );
 
   (* uv_udp_t is a subclass of uv_handle_t. *)
   (* uv_udp_send_t is a subclass of uv_req_t. *)
@@ -911,14 +994,20 @@ function uv_udp_init_ex(loop: puv_loop_t; handle: puv_udp_t; flags: UInt)
 
 function uv_udp_open(handle: puv_udp_t; sock: uv_os_sock_t): Integer; cdecl;
 
-function uv_udp_bind(handle: puv_udp_t; addr: psockaddr; flags: UInt)
+function uv_udp_bind(handle: puv_udp_t; const addr: TSockAddr_in_any; flags: UInt)
   : Integer; cdecl;
 
-function uv_udp_getsockname(handle: puv_udp_t; name: psockaddr;
-  namelen: pinteger): Integer; cdecl;
+function uv_udp_connect(handle: puv_udp_t; const addr: TSockAddr_in_any): Integer; cdecl;
 
-function uv_udp_set_membership(handle: puv_udp_t; multicast_addr: pchar;
-  interface_addr: pchar; membership: uv_membership): Integer; cdecl;
+function uv_udp_getsockname(handle: puv_udp_t; name: psockaddr; var namelen: integer): Integer; cdecl;
+
+function uv_udp_getpeername(handle: puv_udp_t; name: psockaddr; var namelen: integer): Integer; cdecl;
+
+function uv_udp_get_send_queue_count(const handle: puv_udp_t) : size_t;
+function uv_udp_get_send_queue_size(const handle: puv_udp_t) : size_t;
+
+function uv_udp_set_membership(handle: puv_udp_t; multicast_addr: PUTF8Char;
+  interface_addr: PUTF8Char; membership: uv_membership): Integer; cdecl;
 
 function uv_udp_set_multicast_loop(handle: puv_udp_t; &on: Integer)
   : Integer; cdecl;
@@ -927,7 +1016,7 @@ function uv_udp_set_multicast_ttl(handle: puv_udp_t; ttl: Integer)
   : Integer; cdecl;
 
 function uv_udp_set_multicast_interface(handle: puv_udp_t;
-  interface_addr: pchar): Integer; cdecl;
+  interface_addr: PUTF8Char): Integer; cdecl;
 
 function uv_udp_set_broadcast(handle: puv_udp_t; &on: Integer): Integer; cdecl;
 
@@ -1220,7 +1309,6 @@ function uv_kill(pid: uv_pid_t; signum: Integer): Integer; cdecl;
 function uv_queue_work(loop: puv_loop_t; req: puv_work_t; work_cb: uv_work_cb;
   after_work_cb: uv_after_work_cb): Integer; cdecl;
 
-function uv_cancel(req: puv_req_t): Integer; cdecl;
 
 function uv_setup_args(argc: Integer; argv: PAnsiCharArray)
   : PAnsiCharArray; cdecl;
@@ -1287,43 +1375,71 @@ procedure uv_free_interface_addresses(addresses: puv_interface_address_t;
 
 procedure uv_fs_req_cleanup(req: puv_fs_t); cdecl;
 
+function uv_fs_get_type(const req: puv_fs_t) : uv_fs_type; cdecl;
+function uv_fs_get_path(const req: puv_fs_t) : PUTF8Char; cdecl;
+function uv_fs_get_ptr(const req: puv_fs_t) : Pointer; cdecl;
+function uv_fs_get_result(const req: puv_fs_t) : ssize_t; cdecl;
+function uv_fs_get_statbuf(req:uv_fs_t): puv_stat_t; cdecl;
+
 function uv_fs_close(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_open(loop: puv_loop_t; req: puv_fs_t; path: PAnsiChar;
+function uv_fs_open(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   flags: Integer; mode: Integer; cb: uv_fs_cb): Integer; cdecl;
 
 function uv_fs_read(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   bufs: puv_buf_t; nbufs: UInt; offset: Int64; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_unlink(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_unlink(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   cb: uv_fs_cb): Integer; cdecl;
 
 function uv_fs_write(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   bufs: puv_buf_t; nbufs: UInt; offset: Int64; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_mkdir(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_mkdir(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   mode: Integer; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_mkdtemp(loop: puv_loop_t; req: puv_fs_t; tpl: pchar;
+function uv_fs_mkdtemp(loop: puv_loop_t; req: puv_fs_t; tpl: PUTF8Char;
   cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_rmdir(loop: puv_loop_t; req: puv_fs_t; path: pchar; cb: uv_fs_cb)
+function uv_fs_rmdir(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char; cb: uv_fs_cb)
   : Integer; cdecl;
 
-function uv_fs_scandir(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_scandir(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   flags: Integer; cb: uv_fs_cb): Integer; cdecl;
 
 function uv_fs_scandir_next(req: puv_fs_t; ent: puv_dirent_t): Integer; cdecl;
 
-function uv_fs_stat(loop: puv_loop_t; req: puv_fs_t; path: pchar; cb: uv_fs_cb)
+function uv_fs_stat(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char; cb: uv_fs_cb)
   : Integer; cdecl;
 
 function uv_fs_fstat(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_rename(loop: puv_loop_t; req: puv_fs_t; path: pchar;
-  new_path: pchar; cb: uv_fs_cb): Integer; cdecl;
+function uv_fs_rename(loop: puv_loop_t; req: puv_fs_t; const path: PUTF8Char;
+  const new_path: PUTF8Char; cb: uv_fs_cb): Integer; cdecl;
+
+(*
+ * This flag can be used with uv_fs_copyfile() to return an error if the
+ * destination already exists.
+ *)
+const UV_FS_COPYFILE_EXCL  = $1;
+
+(*
+ * This flag can be used with uv_fs_copyfile() to attempt to create a reflink.
+ * If copy-on-write is not supported, a fallback copy mechanism is used.
+ *)
+UV_FS_COPYFILE_FICLONE  = $2;
+
+(*
+ * This flag can be used with uv_fs_copyfile() to attempt to create a reflink.
+ * If copy-on-write is not supported, an error is returned.
+ *)
+UV_FS_COPYFILE_FICLONE_FORCE  = $4;
+
+
+function uv_fs_copyfile(loop: puv_loop_t; req: puv_fs_t; const path: PUTF8Char;
+  const new_path: PUTF8Char; flags:integer; cb: uv_fs_cb) : Integer; cdecl;
 
 function uv_fs_fsync(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   cb: uv_fs_cb): Integer; cdecl;
@@ -1338,23 +1454,23 @@ function uv_fs_sendfile(loop: puv_loop_t; req: puv_fs_t; out_fd: uv_file;
   in_fd: uv_file; in_offset: Int64; length: SIZE_T; cb: uv_fs_cb)
   : Integer; cdecl;
 
-function uv_fs_access(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_access(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   mode: Integer; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_chmod(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_chmod(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   mode: Integer; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_utime(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_utime(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   atime: double; mtime: double; cb: uv_fs_cb): Integer; cdecl;
 
 function uv_fs_futime(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   atime: double; mtime: double; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_lstat(loop: puv_loop_t; req: puv_fs_t; path: pchar; cb: uv_fs_cb)
+function uv_fs_lstat(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char; cb: uv_fs_cb)
   : Integer; cdecl;
 
-function uv_fs_link(loop: puv_loop_t; req: puv_fs_t; path: pchar;
-  new_path: pchar; cb: uv_fs_cb): Integer; cdecl;
+function uv_fs_link(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
+  new_path: PUTF8Char; cb: uv_fs_cb): Integer; cdecl;
 
 (*
   * This flag can be used with uv_fs_symlink() on Windows to specify whether
@@ -1368,26 +1484,30 @@ const
   *)
   UV_FS_SYMLINK_JUNCTION = $0002;
 
-function uv_fs_symlink(loop: puv_loop_t; req: puv_fs_t; path: pchar;
-  new_path: pchar; flags: Integer; cb: uv_fs_cb): Integer; cdecl;
+function uv_fs_symlink(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
+  new_path: PUTF8Char; flags: Integer; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_readlink(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_readlink(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_realpath(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_realpath(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   cb: uv_fs_cb): Integer; cdecl;
 
 function uv_fs_fchmod(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   mode: Integer; cb: uv_fs_cb): Integer; cdecl;
 
-function uv_fs_chown(loop: puv_loop_t; req: puv_fs_t; path: pchar;
+function uv_fs_chown(loop: puv_loop_t; req: puv_fs_t; path: PUTF8Char;
   uid: uv_uid_t; gid: uv_gid_t; cb: uv_fs_cb): Integer; cdecl;
 
 function uv_fs_fchown(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   uid: uv_uid_t; gid: uv_gid_t; cb: uv_fs_cb): Integer; cdecl;
 
 type
-  uv_fs_event = (UV_RENAME = 1, UV_CHANGE = 2);
+  uv_fs_event = integer;
+  TFS_Event = set of (feRename, feChange);
+const
+  UV_RENAME = 1;
+  UV_CHANGE = 2;
 
   (*
     * uv_fs_stat() based polling file watcher.
@@ -1397,11 +1517,11 @@ function uv_fs_poll_init(loop: puv_loop_t; handle: puv_fs_poll_t)
   : Integer; cdecl;
 
 function uv_fs_poll_start(handle: puv_fs_poll_t; poll_cb: uv_fs_poll_cb;
-  path: pchar; interval: UInt): Integer; cdecl;
+  path: PUTF8Char; interval: UInt): Integer; cdecl;
 
 function uv_fs_poll_stop(handle: puv_fs_poll_t): Integer; cdecl;
 
-function uv_fs_poll_getpath(handle: puv_fs_poll_t; buffer: pchar; size: psize_t)
+function uv_fs_poll_getpath(handle: puv_fs_poll_t; buffer: PUTF8Char; size: psize_t)
   : Integer; cdecl;
 
 function uv_signal_init(loop: puv_loop_t; handle: puv_signal_t): Integer; cdecl;
@@ -1446,12 +1566,12 @@ function uv_fs_event_init(loop: puv_loop_t; handle: puv_fs_event_t)
   : Integer; cdecl;
 
 function uv_fs_event_start(handle: puv_fs_event_t; cb: uv_fs_event_cb;
-  path: pchar; flags: UInt): Integer; cdecl;
+  path: PUTF8Char; flags: UInt): Integer; cdecl;
 
 function uv_fs_event_stop(handle: puv_fs_event_t): Integer; cdecl;
 
-function uv_fs_event_getpath(handle: puv_fs_event_t; buffer: pchar;
-  size: psize_t): Integer; cdecl;
+function uv_fs_event_getpath(handle: puv_fs_event_t; buffer: PUTF8Char;
+  var size: size_t): Integer; cdecl;
 
 function uv_get_osfhandle(fd: uv_file) : uv_os_fd_t; inline;
 
@@ -1476,11 +1596,11 @@ function uv_inet_ntop(af: Integer; src: pinteger; dst: pAnsichar; size: SIZE_T)
 
 function uv_inet_pton(af: Integer; src: pAnsichar; out dst): Integer; cdecl;
 
-function uv_exepath(buffer: pchar; size: psize_t): Integer; cdecl;
+function uv_exepath(buffer: PUTF8Char; size: psize_t): Integer; cdecl;
 
-function uv_cwd(buffer: pchar; size: psize_t): Integer; cdecl;
+function uv_cwd(buffer: PUTF8Char; size: psize_t): Integer; cdecl;
 
-function uv_chdir(dir: pchar): Integer; cdecl;
+function uv_chdir(dir: PUTF8Char): Integer; cdecl;
 
 function uv_get_free_memory: UInt64; cdecl;
 
@@ -1490,14 +1610,14 @@ function uv_hrtime: UInt64; cdecl;
 
 procedure uv_disable_stdio_inheritance; cdecl;
 
-function uv_dlopen(filename: pchar; lib: puv_lib_t): Integer; cdecl;
+function uv_dlopen(filename: PUTF8Char; lib: puv_lib_t): Integer; cdecl;
 
 procedure uv_dlclose(lib: puv_lib_t); cdecl;
 
-function uv_dlsym(lib: puv_lib_t; name: pchar; var ptr: pointer)
+function uv_dlsym(lib: puv_lib_t; name: PUTF8Char; var ptr: pointer)
   : Integer; cdecl;
 
-function uv_dlerror(lib: puv_lib_t): pchar; cdecl;
+function uv_dlerror(lib: puv_lib_t): PUTF8Char; cdecl;
 
 function uv_mutex_init(handle: puv_mutex_t): Integer; cdecl;
 
@@ -1678,8 +1798,6 @@ function uv_shutdown; external LIBUV_FILE;
 
 function uv_handle_size; external LIBUV_FILE;
 
-function uv_req_size; external LIBUV_FILE;
-
 function uv_is_active; external LIBUV_FILE;
 
 procedure uv_walk; external LIBUV_FILE;
@@ -1747,7 +1865,11 @@ function uv_udp_open; external LIBUV_FILE;
 
 function uv_udp_bind; external LIBUV_FILE;
 
+function uv_udp_connect; external LIBUV_FILE;
+function uv_udp_getpeername; external LIBUV_FILE;
 function uv_udp_getsockname; external LIBUV_FILE;
+function uv_udp_get_send_queue_count; external LIBUV_FILE;
+function uv_udp_get_send_queue_size; external LIBUV_FILE;
 
 function uv_udp_set_membership; external LIBUV_FILE;
 
@@ -1857,6 +1979,12 @@ function uv_kill; external LIBUV_FILE;
 function uv_queue_work; external LIBUV_FILE;
 
 function uv_cancel; external LIBUV_FILE;
+function uv_req_size; external LIBUV_FILE;
+function uv_req_get_data; external LIBUV_FILE;
+procedure uv_req_set_data; external LIBUV_FILE;
+function uv_req_get_type; external LIBUV_FILE;
+function uv_req_type_name; external LIBUV_FILE;
+
 
 function uv_setup_args; external LIBUV_FILE;
 
@@ -1890,6 +2018,12 @@ procedure uv_free_interface_addresses; external LIBUV_FILE;
 
 procedure uv_fs_req_cleanup; external LIBUV_FILE;
 
+function uv_fs_get_type; external LIBUV_FILE;
+function uv_fs_get_path; external LIBUV_FILE;
+function uv_fs_get_ptr; external LIBUV_FILE;
+function uv_fs_get_result; external LIBUV_FILE;
+function uv_fs_get_statbuf; external LIBUV_FILE;
+
 function uv_fs_close; external LIBUV_FILE;
 
 function uv_fs_open; external LIBUV_FILE;
@@ -1915,6 +2049,8 @@ function uv_fs_stat; external LIBUV_FILE;
 function uv_fs_fstat; external LIBUV_FILE;
 
 function uv_fs_rename; external LIBUV_FILE;
+
+function uv_fs_copyfile; external LIBUV_FILE;
 
 function uv_fs_fsync; external LIBUV_FILE;
 
@@ -2203,6 +2339,7 @@ begin
   result := ntohs(src.sin_port);
 end;
 
+
 procedure uv_set_ip_port(src: PSockAddr_In; port: word);
 begin
    src.sin_port :=  htons(port);
@@ -2230,6 +2367,90 @@ end;
 function IsIPv6(const ip: UTF8String) : Boolean; inline;
 begin
   result := IsIp(ip) = 6;
+end;
+
+{ uv_sockAddr }
+
+procedure uv_sockAddr.Assign(addr: PSockAddr_in_any);
+begin
+  self := default(uv_sockAddr);
+  if assigned(addr) then
+  begin
+     if addr.ip4.sin_family = UV_AF_INET then
+        sa.ip4 := addr.ip4
+     else
+     if addr.ip4.sin_family = UV_AF_INET6 then
+        sa.ip6 := addr.ip6;
+  end;
+end;
+
+class function uv_sockAddr.Create(const Aaddr: UTF8String;
+  Aport: word): uv_sockAddr;
+begin
+   result.Init(AAddr,APort);
+end;
+
+function uv_sockAddr.GetAddr: UTF8String;
+var
+  nameBuf : array [0..128] of UTF8Char;
+begin
+  case sa.ip4.sin_family of
+     UV_AF_INET:
+        begin
+          np_ok( uv_ip4_name(PSockAddr_In(@sa), @nameBuf, sizeof(nameBuf) ) );
+          result := UTF8String(PUTF8Char( @nameBuf ));
+        end;
+     UV_AF_INET6:
+        begin
+          np_ok( uv_ip6_name(PSockAddr_In6(@sa), @nameBuf, sizeof(nameBuf) ) );
+          result := UTF8String(PUTF8Char( @nameBuf ));
+        end;
+      else
+        assert(false);
+  end;
+
+end;
+
+function uv_sockAddr.GetPort: word;
+begin
+  result := ntohs(sa.ip4.sin_port);
+end;
+
+
+procedure uv_sockAddr.Init(const Aaddr: UTF8String; Aport: word);
+begin
+   self  := default( uv_sockAddr );
+   port := APort;
+   Addr := AAddr;
+end;
+
+function uv_sockAddr.isIP6: Boolean;
+begin
+  result := sa.ip4.sin_family = UV_AF_INET6;
+end;
+
+procedure uv_sockAddr.SetAddr(const Aaddr: UTF8String);
+begin
+  if uv_ip4_addr(PUTF8Char(Aaddr),GetPort,sa.ip4) < 0 then
+     np_ok( uv_ip6_addr(PUTF8Char(Aaddr),GetPort,sa.ip6) );
+end;
+
+procedure uv_sockAddr.SetPort(Aport: word);
+begin
+  sa.ip4.sin_port := htons(Aport);
+end;
+
+function uv_sockAddr.ToString: String;
+begin
+   if isIP6 then
+     result := Format('[%s]:%u',[Addr,Port])
+   else
+     result := Format('%s:%u',[Addr,Port]);
+end;
+
+function UV_ONCE_INIT : uv_once_t;
+begin
+   result := default(uv_once_t);
 end;
 
 initialization

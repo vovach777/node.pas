@@ -107,12 +107,12 @@
         <DCCReference Include="source\np.core.pas"/>
         <DCCReference Include="source\np.libuv.pas"/>
         <DCCReference Include="source\np.winsock.pas"/>
-        <DCCReference Include="source\np.core.ed.pas"/>
         <DCCReference Include="source\np.HttpConnect.pas"/>
         <DCCReference Include="source\np.eventEmitter.pas"/>
         <DCCReference Include="source\np.http_parser.pas"/>
         <DCCReference Include="source\np.common.pas"/>
         <DCCReference Include="source\np.json.pas"/>
+        <DCCReference Include="source\np.fs.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -146,6 +146,12 @@
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\17.0\Bpl\Win64\Node.pas.bpl" Configuration="Debug" Class="ProjectOutput"/>
+                <DeployFile LocalName="C:\Users\Public\Documents\Embarcadero\Studio\20.0\Bpl\Win64\Node.pas.rsm" Configuration="Debug" Class="DebugSymbols">
+                    <Platform Name="Win64">
+                        <RemoteName>Node_pas.rsm</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="$(BDS)\Redist\osx64\libcgsqlite3.dylib" Class="DependencyModule">
                     <Platform Name="OSX64">
                         <Overwrite>true</Overwrite>
