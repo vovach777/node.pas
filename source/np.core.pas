@@ -1,4 +1,4 @@
-{.$CAPTURE_WRITE_BUF}
+{.$DEFINE CAPTURE_WRITE_BUF}
 unit np.core;
 
 interface
@@ -83,8 +83,8 @@ interface
 
   INPWatch = interface(INPHandle)
   ['{00C99155-9FE6-4E58-AEF3-F80B20CC1233}']
-      function  getpath: UTF8String;
-      property path : UTF8String read getpath;
+      function  getpath: String;
+      property path : String read getpath;
   end;
 
   INPTimer = Interface(INPHandle)
@@ -503,7 +503,7 @@ interface
   function SetInterval(p: Tproc; AInterval: Uint64): INPTimer;
   function SetTimeout(p: Tproc; ATimeout: Uint64): INPTimer;
 
-  function setFSWatch(p: TWatchCallBack; const Path: UTF8String; flag:Integer=0) : INPWatch;
+  function setFSWatch(p: TWatchCallBack; const Path: String; flag:Integer=0) : INPWatch;
 
   function thread_create(p : TProc) : uv_thread_t;
   procedure thread_join(tid: uv_thread_t);
@@ -1709,7 +1709,6 @@ begin
            _writecb(wd, status);
          end);
     end;
-//  end;
 end;
 
 procedure TNPStream.write(const data: UTF8String; ACallBack: TProc);
@@ -1937,13 +1936,15 @@ end;
 
 type
      TNPWatch = Class(TNPBaseHandle, INPWatch)
+     private
+       FPath: UTF8String;
+       FCallBack : TWatchCallBack;
      protected
+         function  getpath: String;
          procedure onClose; override;
          procedure before_closing; override;
      public
-       FCallBack : TWatchCallBack;
-      function  getpath: UTF8String;
-       constructor Create(ACallBack: TWatchCallBack; const APath: UTF8String; flags : integer);
+       constructor Create(const ACallBack: TWatchCallBack; const APath: String; flags : integer);
        destructor Destroy; override;
      end;
 
@@ -2697,12 +2698,17 @@ begin
     uv_fs_event_stop( puv_fs_event_t( FHandle ) );
 end;
 
-constructor TNPWatch.Create(ACallBack: TWatchCallBack; const APath: UTF8String;
+constructor TNPWatch.Create(const ACallBack: TWatchCallBack; const APath: string;
   flags: integer);
 begin
    inherited Create(UV_FS_EVENT_);
+   {$IFDEF MSWINDOWS}
+      FPath := StringReplace(APath,'/','\',[rfReplaceAll]);
+   {$ENDIF}
+   while (Length(FPath)>0) and (FPath[Length(FPath)] = PathDelim) do
+     SetLength(FPath,Length(FPath)-1);
    np_ok( uv_fs_event_init(loop.uvloop,puv_fs_event_t( FHandle) ) );
-   np_ok( uv_fs_event_start(puv_fs_event_t( FHandle), @__event_cb, @APath[1], flags ) );
+   np_ok( uv_fs_event_start(puv_fs_event_t( FHandle), @__event_cb, PUTF8Char( UTF8String(FPath) ), flags ) );
    FCallBack := ACallBack;
    FActiveRef := self;
 end;
@@ -2713,16 +2719,17 @@ begin
   inherited;
 end;
 
-function TNPWatch.getpath: UTF8String;
-var
-  sz : size_t;
+function TNPWatch.getpath: String;
+//var
+//  sz : size_t;
 begin
-  sz := 1024;
-  setLength(result,sz);
-  if uv_fs_event_getpath(  puv_fs_event_t( FHandle ), @result[1], sz ) < 0 then
-     SetLength(result,0)
-  else
-     SetLength(result, sz);
+//  sz := 1024;
+//  setLength(result,sz);
+//  if uv_fs_event_getpath(  puv_fs_event_t( FHandle ), @result[1], sz ) < 0 then
+//     SetLength(result,0)
+//  else
+//     SetLength(result, sz);
+   result := FPath;
 end;
 
 procedure TNPWatch.onClose;
@@ -2733,7 +2740,7 @@ begin
     uv_fs_event_stop( puv_fs_event_t( FHandle ) );
 end;
 
-  function setFSWatch(p: TWatchCallBack; const Path: UTF8String; flag:Integer) : INPWatch;
+  function setFSWatch(p: TWatchCallBack; const Path: String; flag:Integer) : INPWatch;
   begin
      result := TNPWatch.Create(p,path,flag);
   end;
