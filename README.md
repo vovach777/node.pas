@@ -10,8 +10,8 @@ NodeJS-like ecosystem
 * Buffer
 * loop
 * setImmediate/nextTick
-* setTimeout/setInterval
-* tcp/pipe/tty
+* setTimeout/setInterval 
+* udp/tcp/pipe/tty
 * shared handle over pipes
 * fs/fswatch
 * child process

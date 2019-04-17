@@ -672,6 +672,7 @@ type
   uv_timespec_t = record
     tv_sec: Integer;
     tv_nsec: Integer;
+    function toTimeStamp : Double;
   end;
 
   uv_stat_t = record
@@ -750,8 +751,7 @@ type
           (netmask4: Tsockaddr_in;);
         1:
           (netmask6: Tsockaddr_in6;);
-    { uv_once_t }
-end;
+    end;
   end;
 
   uv_interface_address_t = uv_interface_address_s;
@@ -2451,6 +2451,13 @@ end;
 function UV_ONCE_INIT : uv_once_t;
 begin
    result := default(uv_once_t);
+end;
+
+{ uv_timespec_t }
+
+function uv_timespec_t.toTimeStamp: Double;
+begin
+  result := int64(tv_sec) * 1000 + tv_nsec/1000000;
 end;
 
 initialization

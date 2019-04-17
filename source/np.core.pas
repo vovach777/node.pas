@@ -6,10 +6,8 @@ interface
       np.eventEmitter;
   type
 
-//    IEventEmitter = np.eventEmitter.IEventEmitter;
-//    TEventEmmiter = np.eventEmitter.TEventEmitter;
-//    TIEventEmitter = np.eventEmitter.TIEventEmitter;
     PBufferRef = np.buffer.PBufferRef;
+
     IQueueItem = interface
     ['{49B198FA-6AA5-43C4-9F04-574E0411EA76}']
       procedure Invoke;
@@ -106,11 +104,6 @@ interface
      INPStream = interface(INPHandle)
        ['{DAF6338E-B124-403E-B4C9-BF5B3556697C}']
       procedure shutdown(Acallback : TProc=nil);
-//      procedure write(data: Pbyte; dataLen : cardinal; Acallback: TProc=nil); overload;
-//      procedure write(data: UTF8String; Acallback: TProc=nil); overload;
-      //procedure setOnClose(OnClose: TProc);
-//      procedure setOnData(onData: TProc<PByte,Cardinal>);
-//      procedure setOnEnd(onEnd: TProc);
       function is_readable : Boolean;
       function is_writable: Boolean;
       procedure setOnData(onData: TProc<PBufferRef>);
@@ -136,8 +129,6 @@ interface
 
     INPTCPConnect = interface (INPTCPStream)
       ['{8F00A812-AFA9-4313-969E-88AD2935C5B0}']
-//      procedure start_read;
-//      procedure stop_read;
       procedure connect(const address: TSockAddr_in_any; ACallBack: TProc=nil); overload;
       procedure connect(const address: Utf8String; port: word); overload;
       procedure setOnConnect(onConnect : TProc);
@@ -289,7 +280,6 @@ interface
        constructor Create(AHandleType: uv_handle_type);
      end;
 
-
     TNPTCPHandle = class(TNPStream)
        procedure bind(const Aaddr: UTF8String; Aport: word);
        procedure bind6(const Aaddr: UTF8String; Aport: word; tcp6Only: Boolean=false);
@@ -347,10 +337,11 @@ interface
   end;
 
 
-  TLoop = class(TEventEmitter)
+  TLoop = class(TEventEmitterComponent)
+  private
+    check: INPCheck;
   public
     Fuvloop: puv_loop_t;
-    //isDefault : Boolean;
     embededTasks: INPAsync;
     checkQueue: TProcQueue;
     nextTickQueue: TProcQueue;
@@ -364,15 +355,10 @@ interface
     procedure newThread(p: TProc; onJoin: TProc = nil);
     function setImmediate(p: Tproc): IQueueItem;
     function NextTick(p: Tproc): IQueueItem;
-    constructor Create(); reintroduce;
-//    function QueryInterface(const IID: TGUID; out Obj): HResult; stdcall;
-//    function _AddRef: Integer; stdcall;
-//    function _Release: Integer; stdcall;
+    procedure afterConstruction; override;
     function uvloop: puv_loop_t;
     destructor Destroy; override;
     procedure run_nowait();
-    private
-    check: INPCheck;
     procedure run();
   end;
 
@@ -388,6 +374,9 @@ interface
     function  is_file : Boolean;
     function  is_pipe : Boolean;
     function  is_tty  : Boolean;
+    function  get_tty: INPTTY;
+    function  get_file: uv_file;
+    function  get_pipe: INPPipe;
     procedure Print(const s: UTF8String);
     procedure PrintLn(const s: UTF8String);
     procedure MoveTo(x, y: integer);
@@ -529,12 +518,9 @@ type
     procedure wait;
   end;
 
-
 const
   ev_loop_shutdown = 1;
   ev_loop_beforeTerminate = 2;
-//threadvar
-//  this_eventHandler: IEventHandler;
 
 {$IFDEF DEBUG}
   threadvar
@@ -603,7 +589,6 @@ type
      tv_stderr: INPSTDOUT;
      tv_stdin : INPStream;
      {$IFDEF MSWINDOWS}
-
        function uv_dup( fd: uv_os_fd_t) : uv_os_fd_t;
        begin
          result := INVALID_HANDLE_VALUE;
@@ -661,7 +646,7 @@ type
   function loop : TLoop;
   begin
     if not assigned(tv_loop) then
-      TLoop.Create;
+      TLoop.Create(nil);
     assert(assigned(tv_loop));
     result := tv_loop;
   end;
@@ -669,14 +654,11 @@ type
   procedure LoopHere;
   begin
     if not assigned(tv_loop) then
-      tv_loop := TLoop.Create;
+      tv_loop := TLoop.Create(nil);
     tv_loop.run;
     tv_stdin := nil;
     tv_stdout := nil;
   end;
-
-
-
 
 function TProcQueue.add(p: TProc) : IQueueItem;
 var
@@ -792,8 +774,6 @@ end;
 
 { TLoop }
 
-
-
 procedure TLoop.addTask;
 begin
   inc(taskCount);
@@ -801,11 +781,11 @@ begin
      embededTasks.ref;
 end;
 
-constructor TLoop.Create();
+procedure TLoop.afterconstruction;
 begin
+  inherited;
   tv_loop := self;
   loopThread := uv_thread_self;
-  inherited Create();
   New(Fuvloop);
   np_ok( uv_loop_init(Fuvloop) );
   assert( assigned(Fuvloop));
@@ -981,25 +961,6 @@ function TLoop.uvloop: puv_loop_t;
 begin
   result := Fuvloop;
 end;
-
-//function TLoop.QueryInterface(const IID: TGUID; out Obj): HResult;
-//begin
-//  if GetInterface(IID, Obj) then
-//    Result := 0
-//  else
-//    Result := E_NOINTERFACE;
-//end;
-//
-//function TLoop._AddRef: Integer;
-//begin
-//  result := 1;
-//end;
-//
-//function TLoop._Release: Integer;
-//begin
-//  result := 1;
-//end;
-
 
   type
 
@@ -1525,10 +1486,6 @@ begin
     end;
   wd.callback := nil;
   wd.streamRef := nil;
-//  if wd.debugInfo > 0 then
-//  begin
-//     sleep(0);
-//  end;
 
 {$IFDEF CAPTURE_WRITE_BUF}
   if (wd.buf.len > 0) then
@@ -1605,8 +1562,8 @@ procedure TNPStream.shutdown(ACallBack:TProc);
 begin
   if not is_closing and  not FError and not FShutdown  then
   begin
-      if not FConnected then
-         Clear
+    if not FConnected then
+      Clear
     else
     begin
       try
@@ -1712,9 +1669,12 @@ begin
 end;
 
 procedure TNPStream.write(const data: UTF8String; ACallBack: TProc);
+var
+  dataRef : UTF8String;
 begin
+  dataRef := data;
   if length(data) > 0 then
-    writeInternal(@data[1],length(data), ACallBack)
+    writeInternal(PByte( @dataRef[1] ),length(data), ACallBack)
   else
     writeInternal(nil,0, ACallBack)
 end;
@@ -1761,21 +1721,6 @@ begin
   inherited Create;
   HandleType := AHandleType;
   typeLen := uv_handle_size(AHandleType);
-//  case  HandleType  of
-//      UV_ASYNC         : typeLen := sizeof_async_t;
-//      UV_CHECK         : typeLen := sizeof_check_t;
-//      UV_IDLE          : typeLen := sizeof_idle_t;
-//      UV_NAMED_PIPE    : typeLen := sizeof_pipe_t;
-//      UV_PREPARE       : typeLen := sizeof_prepare_t;
-//      UV_STREAM        : typeLen := sizeof_stream_t;
-//      UV_TCP           : typeLen := sizeof_tcp_t;
-//      UV_TIMER         : typeLen := sizeof_timer_t;
-//      UV_PROCESS       : typeLen := sizeof_process_t;
-//      UV_TTY           : typeLen := sizeof_tty_t;
-//      else
-//
-//          assert(false, Format('type %d not supported',[ord(HandleType)]));
-//  end;
   GetMem(FHandle, typeLen);
   FillChar(FHandle^,typeLen,0);
   uv_set_close_cb(Fhandle, @__on_close);
@@ -2338,10 +2283,22 @@ end;
 procedure TNPSTDOUT.flush;
 var
    buf: TBytes;
+   buf2: BufferRef;
 begin
   if pBuf = '' then
     exit;
-  if is_pipe or is_tty then
+  if is_pipe then
+  begin
+    //BUG WA
+     buf2 := Buffer.Create(pBuf);
+     FStream.write(buf2,
+             procedure
+             begin
+               buf2 := Buffer.Null;
+             end);
+  end
+  else
+  if is_tty then
      FStream.write(pbuf)
   else
   if is_file then
@@ -2395,12 +2352,12 @@ end;
 
 procedure TNPSTDOUT.MoveToY(y: integer);
 begin
-  Print(Format(#27'[%dH', [y]));
+  Print(Format(#27'[%dd', [y]));
 end;
 
 procedure TNPSTDOUT.MoveToX(x: integer);
 begin
-  Print(Format(#27'[;%dH', [x]));
+  Print(Format(#27'[%dG', [x]));
 end;
 
 procedure TNPSTDOUT.Print(const s: UTF8String);
@@ -2408,7 +2365,7 @@ begin
   if length(s) > 0 then
   begin
     beginPrint;
-    pbuf := pbuf + s;
+    pbuf := pbuf + s ;
     endPrint;
   end;
 end;
@@ -2744,7 +2701,6 @@ end;
   begin
      result := TNPWatch.Create(p,path,flag);
   end;
-
 
 { TNPUDP }
 

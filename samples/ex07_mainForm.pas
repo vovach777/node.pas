@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, np.core, np.HttpConnect, np.Url, np.json, np.Ut, np.Promise, np.Buffer, Vcl.AppEvnts, Vcl.ExtCtrls,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, np.core, np.HttpConnect, np.Url, np.json, np.Ut, np.Promise, np.Value, np.Buffer, Vcl.AppEvnts, Vcl.ExtCtrls,
   Vcl.StdCtrls;
 
 type
@@ -71,7 +71,7 @@ end;
 
 function TForm1.do_get(const s: string): IPromise;
 begin
-   result := newPromise(
+   result := Promise.new(
     procedure(ok,ko:TProc<IValue>)
     var
       http : THttpConnect;

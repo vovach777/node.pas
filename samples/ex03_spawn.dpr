@@ -21,7 +21,7 @@ begin
         begin
           stdout.PrintLn('Spawn sample');
           stdout.PrintLn('-----------');
-          spawn :=TNPSpawn.Create();
+          spawn := TNPSpawn.Create();
           spawn.setOnExit(
               procedure (exit_code: int64; term_sign: integer)
               begin
@@ -38,10 +38,9 @@ begin
                procedure (data:PBufferRef)
                begin
                  stdout.Print(data.AsUtf8String );
-               end
-           );
-        end
-    );
+               end);
+
+        end);
     LoopHere;
     WriteLn('loop exit');
     readln;

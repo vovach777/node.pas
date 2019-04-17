@@ -3,6 +3,10 @@ unit np.fs;
 interface
   uses sysUtils, np.common, np.libuv, np.core;
 
+  const
+    oct777 = 511;
+    oct666 = 438;
+    oct444 = 292;
   type
    fs = record
    type
@@ -18,7 +22,7 @@ interface
       TDirentArray = TArray<UTF8String>;
       TDirentWithTypesArray = TArray<TDirentWithTypes>;
       TDirentWithTypesCallBack = TProc<PNPError, TDirentWithTypesArray>;
-      class procedure open(const path: UTF8String; flags:integer; mode:integer; cb : TProc<PNPError,uv_file>); static;
+      class procedure open(const path: UTF8String; flags:integer; mode:integer; cb : TProc<PNPError,uv_file>);static;
       class procedure close(Afile : uv_file; cb : TCallback); static;
       class procedure read(Afile : uv_file; Abuffer:TBytes; Aoffset : size_t; Alength: size_t; APosition:int64; cb : TRWCallback); overload; static;
       class procedure read(Afile : uv_file; Abuffer:TBytes; Aoffset : size_t; Alength: size_t; cb : TRWCallback); overload; static;

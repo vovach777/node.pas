@@ -6,13 +6,14 @@ program ex02_Timers;
 
 uses
   System.SysUtils,
+  np.Buffer,
   np.Core;
 
   procedure main;
   var
     int1 : INPHandle;
 begin
-    stdout.PrintLn(IntToStr(loop.now) + '> '+ TOSVersion.ToString);
+    stdout.PrintLn(IntToStr(loop.now)+ '> ' + TOSVersion.ToString);
     SetTimeout(
               procedure
               begin
@@ -35,7 +36,7 @@ begin
   try
     main;
     loopHere;
-    WriteLn('loop exit');
+//    WriteLn('loop exit');
 //    readln;
   except
     on E: Exception do

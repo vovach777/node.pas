@@ -50,7 +50,13 @@ contains
   np.http_parser in 'source\np.http_parser.pas',
   np.common in 'source\np.common.pas',
   np.json in 'source\np.json.pas',
-  np.fs in 'source\np.fs.pas';
+  np.fs in 'source\np.fs.pas',
+  np.value in 'source\np.value.pas',
+  np.eventEmitter.Tcomponent in 'source\np.eventEmitter.Tcomponent.pas',
+  np.eventEmitter.TAnyObject in 'source\np.eventEmitter.TAnyObject.pas',
+  np.eventEmitter.TInterfacedObject in 'source\np.eventEmitter.TInterfacedObject.pas',
+  np.dirmon in 'source\np.dirmon.pas';
 
 end.
+
 

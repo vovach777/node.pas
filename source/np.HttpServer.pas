@@ -2,7 +2,7 @@ unit np.HttpServer;
 
 interface
   uses sysUtils, np.common, np.Core, np.httpParser, np.url, np.buildData, np.buffer,
-        np.HttpUt, np.OpenSSL, np.libuv, np.ut, np.Promise;
+        np.HttpUt, np.OpenSSL, np.libuv, np.ut, np.Promise, np.value;
 
   type
      IHttpRequest = interface
@@ -548,7 +548,7 @@ end;
 
 procedure THttpClient.InitRequest;
 begin
-   FData := TAnyObject.new;
+   FData := TAnyObject.Create;
    FHeaders.Clear;
    FBody.length := 0;
    FResponseFinished := false;

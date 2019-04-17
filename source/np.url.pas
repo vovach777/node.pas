@@ -23,6 +23,7 @@ Interface
        FSplitPath : TArray<String>;
        function GetPort: word;
        function GetSplitPath : TArray<String>;
+    function GetDocument: string;
     public
        procedure Parse(const AURL: BufferRef); overload;
        procedure Parse(const AURL: String); overload;
@@ -41,6 +42,7 @@ Interface
        property SplitPath : TArray<String> read GetSplitPath;
        property FullPath: string read FFullPath;
        property Params: TNameValues read FParams;
+       property Document: string read GetDocument;
     end;
 
 implementation
@@ -294,6 +296,19 @@ begin
   except
     raise EURL.CreateFmt('Can not decode URL %s',[s]);
   end;
+end;
+
+function TURL.GetDocument: string;
+var
+  sp : TArray<String>;
+  inx : integer;
+begin
+  sp := SplitPath;
+  inx := length(sp)-1;
+  if inx >= 0 then
+     result := sp[inx]
+  else
+     result := '';
 end;
 
 function TURL.GetPort: word;
