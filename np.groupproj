@@ -13,7 +13,7 @@
             <Dependencies>Node.pas.dproj</Dependencies>
         </Projects>
         <Projects Include="samples\ex03_spawn.dproj">
-            <Dependencies>Node.pas.dproj</Dependencies>
+            <Dependencies>samples\ex02_Timers.dproj;Node.pas.dproj</Dependencies>
         </Projects>
         <Projects Include="samples\ex04_tcp.dproj">
             <Dependencies>Node.pas.dproj</Dependencies>
@@ -71,13 +71,13 @@
     <Target Name="ex02_Timers:Make" DependsOnTargets="Node.pas:Make">
         <MSBuild Projects="samples\ex02_Timers.dproj" Targets="Make"/>
     </Target>
-    <Target Name="ex03_spawn" DependsOnTargets="Node.pas">
+    <Target Name="ex03_spawn" DependsOnTargets="ex02_Timers;Node.pas">
         <MSBuild Projects="samples\ex03_spawn.dproj"/>
     </Target>
-    <Target Name="ex03_spawn:Clean" DependsOnTargets="Node.pas:Clean">
+    <Target Name="ex03_spawn:Clean" DependsOnTargets="ex02_Timers:Clean;Node.pas:Clean">
         <MSBuild Projects="samples\ex03_spawn.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="ex03_spawn:Make" DependsOnTargets="Node.pas:Make">
+    <Target Name="ex03_spawn:Make" DependsOnTargets="ex02_Timers:Make;Node.pas:Make">
         <MSBuild Projects="samples\ex03_spawn.dproj" Targets="Make"/>
     </Target>
     <Target Name="ex04_tcp" DependsOnTargets="Node.pas">
@@ -160,14 +160,14 @@
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
-            <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
+        <BuildGroupProject Include="samples\ex05_thread.dproj">
+            <ProjectGuid>{CC366E82-CDB2-49E5-9CC8-E074E4347D6B}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex05_thread.dproj">
-            <ProjectGuid>{CC366E82-CDB2-49E5-9CC8-E074E4347D6B}</ProjectGuid>
+        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
+            <ProjectGuid>{5761017B-E99D-4F85-A916-F671FBA3C2D9}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
