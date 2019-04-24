@@ -12,6 +12,7 @@ interface
     numberId = 'number';
     exceptionId = 'exception';
     stringId = 'string';
+    spreadId = '...';
 
   type
 
@@ -44,6 +45,7 @@ interface
      function RTTI: TValue; override;
      function this: T;
      function ToString : String; override;
+     function Equals(Obj: TObject) : Boolean; override;
   end;
 
   TArrayValue = class(TValue<TArray<IValue>>);
@@ -84,13 +86,15 @@ interface
     FLength: int64;
     FShift:  int64;
   public
+     constructor Create( elemNum: int64 ); overload;
+     constructor Create(initialValues : array of const ); overload;
+     constructor Create(); reintroduce; overload;
      destructor Destroy; override;
      function  GetValueAt( Index: Int64 ) : IValue;
      procedure SetValueAt( Index: Int64; AValue: IValue );
-     constructor Create(initialValues : array of const ); overload;
-     constructor Create(); reintroduce; overload;
      function ToString: String; override;
      function GetLength : Int64;
+     procedure SetLength(const AValue: int64);
      function Pop : IValue;
      function Push(AValue: IValue) : Int64; overload;
      function Push(AValues : array of const) : int64; overload;
@@ -101,30 +105,35 @@ interface
      function find( func : TFunc<IValue,int64,TAnyArray,Boolean> ) : IValue; overload;
      function find( func : TFunc<IValue,int64,Boolean> ) : IValue; overload;
      function find( func : TFunc<IValue,Boolean> ): IValue; overload;
+     function Includes(const value : IValue; AFromIndex:int64=0 ) : Boolean;
+     procedure fill( value: IValue; start: int64=0; end_:int64 =High(Int64));
      function join(const separator : string=',') : string;
-     function splice(start:int64; deleteCount: integer; insert : array of const) : IValue;
+     function splice(start:int64; deleteCount: int64; insert : array of const) : IValue;
      function shift : IValue;
      function unshift(AValue: IValue) : int64; overload;
      function unshift(AValues: array of const) : int64; overload;
      function this: TAnyArray;
      property ValueAt[ Index: int64] : IValue read GetValueAt write SetValueAt; default;
-     property Length : int64 read GetLength;
+     property Length : int64 read GetLength write SetLength;
   end;
 
-    TJSONNumber = class(TValue<Double>)
-        constructor Create(AValue: Double);
-        function ToString : String; override;
-    end;
+  TJSONNumber = class(TValue<Double>)
+      constructor Create(AValue: Double);
+      function ToString : String; override;
+      function Equals(Obj: TObject): Boolean; override;
+  end;
 
-    TJSONBoolean = class(TValue<Boolean>)
-        constructor Create(AValue: Boolean);
-        function ToString : String; override;
-    end;
+  TJSONBoolean = class(TValue<Boolean>)
+      constructor Create(AValue: Boolean);
+      function ToString : String; override;
+      function Equals(Obj: TObject): Boolean; override;
+  end;
 
-    TJSONString = class(TValue<String>)
-        constructor Create(const AValue: String);
-        function ToString : String; override;
-    end;
+  TJSONString = class(TValue<String>)
+      constructor Create(const AValue: String);
+      function ToString : String; override;
+      function Equals(Obj: TObject): Boolean; override;
+  end;
 
   ObjectWalker = record
      this : IValue;
@@ -136,11 +145,12 @@ interface
      function asArray  : TAnyArray;
      procedure walk(const prop: string); overload;
      procedure walk(const path: array of string); overload;
-
   end;
 
   function JSONNull : IValue;
   function void_0 : IValue;
+  function spread : IValue;
+
   function JSONParse(const JSON:String) : IValue; overload;
   function JSONParse(const JSON:String; var I:Integer) : IValue; overload;
 
@@ -149,10 +159,13 @@ interface
   function mkValue(a: TVarRec): IValue; overload;
   function mkValuesOLD(values: array of const) : IValue; deprecated;
   function mkValues(values: array of const) : IValue;
-  function spread : IValue;
+  function TryToJSValue(const AFrom: IValue; out ATo: IValue) : Boolean;
+  function IsJSType(const AValue : IValue) : Boolean;
+  function JSEquals(const value1, value2 : IValue) : Boolean;
+  function II( values: array of const ) : IValue;
 
 implementation
-  uses np.ut;
+  uses np.ut, Generics.Defaults;
 
 { TValue<T> }
 
@@ -163,6 +176,16 @@ constructor TValue<T>.Create(const AValue: T; const ATypeName : string);
        TypeId := ATypeName;
      Value := AValue;
   end;
+
+function TValue<T>.Equals(Obj: TObject): Boolean;
+begin
+   result := inherited Equals(Obj);
+   if not result then
+   begin
+      if obj is TValue<T> then
+        result := TComparer<T>.Default.Compare(value, TValue<T>(obj).Value) = 0;
+   end
+end;
 
 function TValue<T>.RTTI: TValue;
 begin
@@ -244,12 +267,17 @@ end;
             vtString:       result := TJSONString.Create(a.VString^); // mkValue(a.VString^);
             vtWideString:   result := TJSONString.Create(WideString(a.VWideString)); //TValue<string>.Create(WideString(a.VWideString));
 {$ENDIF}
-            vtPointer:      result := TValue<Pointer>.Create(a.VPointer);
+            vtPointer:      begin
+                               if a.VPointer = nil then
+                                  result := void_0
+                               else
+                                  result := TValue<Pointer>.Create(a.VPointer);
+                            end;
             vtPChar:        result := TJSONString.Create( String(a.VPChar) ); //TValue<Char>.Create(char(a.VPChar^));
             vtChar:         result := TJSONString.Create( char(a.VChar) + ''); //TValue<Char>.Create(char(a.VChar));
             vtObject:       begin
                                if a.VObject = nil then
-                                 result := TValue<TObject>.Create(nil)
+                                 result := void_0
                                else
                                if TObject(a.VObject) is TSelfValue then
                                   result := TSelfValue(a.VObject)
@@ -263,7 +291,7 @@ end;
             vtCurrency:     result := TValue<Currency>.Create(a.VCurrency^);
             vtVariant:      result := TValue<Variant>.Create(a.VVariant^);
             vtInterface:    if a.VInterface = nil then
-                                result := nil
+                                result := void_0
                             else
                             if IInterface(a.VInterface).QueryInterface(IValue,result) <> S_OK then
                               result := TValue<IInterface>.Create(IInterface( a.VInterface ));
@@ -378,6 +406,14 @@ begin
     end;
 end;
 
+constructor TAnyArray.Create(elemNum: int64);
+begin
+  Create;
+  if elemNum < 0 then
+    elemNum := 0;//  raise EInvalidArgument.Create('Invalid array length');
+  FLength := elemNum;
+end;
+
 destructor TAnyArray.Destroy;
 begin
   inherited;
@@ -407,6 +443,27 @@ begin
         exit( GetValueAt(i) );
     end;
   exit(void_0);
+end;
+
+procedure TAnyArray.fill(value: IValue; start: int64; end_:int64);
+begin
+   if Start < 0 then
+     start := Max(FLength + start, 0)
+   else
+     start := Min(start,FLength);
+    if  end_ > FLength then
+       end_ := FLength;
+
+    if end_ < 0 then
+      end_ := Max(Flength + end_,0)
+    else
+      end_ := Min(end_, FLength );
+
+    while start < end_ do
+    begin
+      SetValueAt(start, value );
+      inc(start);
+    end;
 end;
 
 function TAnyArray.find(func: TFunc<IValue, Boolean>): IValue;
@@ -446,9 +503,26 @@ begin
      result := nil;
 end;
 
+function TAnyArray.Includes(const value: IValue; AFromIndex:int64): Boolean;
+var
+  i : int64;
+begin
+  result := false;
+  if AFromIndex < 0 then
+     AFromIndex := 0
+  else
+  if AFromIndex >= FLength then
+    exit(false);
+  for i := AFromIndex to FLength-1 do
+  begin
+    if JSEquals( GetValueAt(i), value ) then
+       exit(true);
+  end;
+end;
+
 function TAnyArray.join(const separator: string): string;
 var
-  i : integer;
+  i : int64;
 begin
   if FLength = 0 then
     exit('');
@@ -461,7 +535,7 @@ end;
 
 function TAnyArray.Map(func: TFunc<IValue, IValue>): IValue<TAnyArray>;
 var
-  i : integer;
+  i : int64;
 begin
   result := TAnyArray.Create();
   if not assigned(func) then
@@ -474,7 +548,7 @@ end;
 
 constructor TAnyArray.Create(initialValues: array of const);
 var
-  i : integer;
+  i : int64;
   spredFlag : Boolean;
   tmp : IValue;
   tmpAsArray: TAnyArray;
@@ -515,7 +589,6 @@ begin
   typeId := arrayId;
 end;
 
-
 function TAnyArray.Pop: IValue;
 var
   key : string;
@@ -547,6 +620,27 @@ begin
   result := FLength;
 end;
 
+procedure TAnyArray.SetLength(const AValue: int64);
+begin
+  if AValue > FLength then
+    FLength := AValue
+  else
+  begin
+    if AValue <= 0 then
+    begin
+      FLength := 0;
+      FShift := 0;
+      Value.Clear;
+    end
+    else
+    while FLength > AValue do
+    begin
+      SetValueAt(FLength-1,nil);
+      Dec(FLength);
+    end;
+  end;
+end;
+
 procedure TAnyArray.SetValueAt(Index: Int64; AValue: IValue);
 begin
    if (Index < 0) then
@@ -569,7 +663,7 @@ begin
   dec(FLength);
 end;
 
-function TAnyArray.splice(start: int64; deleteCount: integer;
+function TAnyArray.splice(start: int64; deleteCount: int64;
   insert: array of const): IValue;
 var
   insertArray, removeArray: TAnyArray;
@@ -590,9 +684,13 @@ begin
       start := FLength;
    end;
 
+   if deleteCount < 0 then
+     deleteCount := 0;
+
    if start + deleteCount > FLength  then
      deleteCount := FLength-start;
    actualLength := FLength;
+
 
 
     resultLength := FLength + InsertArray.Length - deleteCount;
@@ -801,6 +899,15 @@ begin
   inherited Create(AValue,numberId);
 end;
 
+function TJSONNumber.Equals(Obj: TObject): Boolean;
+begin
+   result := Obj = self;
+   if (not result) and (Obj is TJSONNumber) then
+   begin
+     result := TJSONNumber(Obj).Value = Value;
+   end;
+end;
+
 function TJSONNumber.ToString: String;
 begin
   if Frac(Value) = 0 then
@@ -817,18 +924,32 @@ begin
   inherited Create(AValue,booleanId);
 end;
 
+function TJSONBoolean.Equals(Obj: TObject): Boolean;
+begin
+   result := Obj = Self;
+   if (not result) and (Obj is TJSONBoolean) then
+   begin
+     result := TJSONBoolean(Obj).Value = Value;
+   end;
+end;
+
 function TJSONBoolean.ToString: String;
 begin
   result := JSONBoolean(value);
 end;
 
 type
-    TJSONNull = class(TValue<Pointer>)
+    TJSONNull = class(TSelfValue)
         constructor Create();
         function ToString : String; override;
     end;
 
-    TVoid_0 = class(TValue<Pointer>)
+    TVoid_0 = class(TSelfValue)
+        constructor Create();
+        function ToString : String; override;
+    end;
+
+    TSpreadOperator = class(TSelfValue)
         constructor Create();
         function ToString : String; override;
     end;
@@ -838,7 +959,8 @@ type
 
 constructor TJSONNull.Create;
 begin
-   inherited Create(nil,nullId);
+   inherited Create;
+   typeid := nullId;
 end;
 
 function TJSONNull.ToString: String;
@@ -874,6 +996,12 @@ end;
 constructor TJSONString.Create(const AValue: String);
 begin
   inherited Create(AValue,stringId);
+end;
+
+function TJSONString.Equals(Obj: TObject): Boolean;
+begin
+  result := assigned(Obj) and (Obj is TValue<String>) and
+            (TValue<String>(obj).Value = Value);
 end;
 
 function TJSONString.ToString: String;
@@ -914,7 +1042,8 @@ end;
 
 constructor TVoid_0.Create;
 begin
-  inherited Create(nil, undefinedId);
+  inherited Create;
+  typeId := undefinedId;
 end;
 
 function TVoid_0.ToString: String;
@@ -1013,9 +1142,111 @@ begin
     result := self;
 end;
 
+function IsJSType(const AValue : IValue) : Boolean;
+begin
+   if AValue = nil then
+     result := IsJsType(void_0)
+   else
+   begin
+     result := (AValue.TypeId = objectId) or
+               (AValue.TypeId = booleanId) or
+               (AValue.TypeId = undefinedId) or
+               (AValue.TypeId = nullId) or
+               (AValue.TypeId = numberId) or
+               (AValue.TypeId = stringId);
+   end;
+end;
+
+function TryToJSValue(const AFrom: IValue; out ATo: IValue) : Boolean;
+var
+  i64: int64;
+  v : TValue;
+begin
+  if AFrom = nil then
+    exit( TryToJSValue(void_0,Ato) );
+  OutputDebugStr(AFrom.TypeId+' '+AFrom.ToString);
+  if IsJSType(AFrom) then
+  begin
+    ATo := AFrom;
+    exit(true);
+  end;
+  v := AFrom.RTTI;
+  case AFrom.RTTI.Kind of
+    tkEnumeration:
+         if v.IsType<Boolean> then
+         begin
+           ATo := TJSONBoolean.Create(v.AsBoolean);
+           exit(true);
+         end;
+    tkFloat:
+         begin
+           ATo := TJSONNumber.Create(v.AsExtended);
+           exit(true);
+         end;
+{$IFNDEF NEXTGEN}
+     tkWString,
+     tkString,
+{$ENDIF}
+     tkLString,
+     tkUString:
+           begin
+             ATo := TJSONString.Create( v.AsString );
+             exit(true);
+           end;
+  end;
+  if v.TryAsOrdinal(i64) then
+  begin
+     ATo := TJSONNumber.Create(i64);
+     exit(true);
+  end;
+  result := false;
+end;
+
+function JSEquals(const value1, value2 : IValue) : Boolean;
+var
+  v1,v2: IValue;
+begin
+   if not tryToJSValue(value1,v1) then
+     v1 := value1;
+
+   if not tryToJSValue(value2,v2) then
+      v2 := value2;
+
+   exit( (v1 as TObject).Equals( v2 as TObject )  and
+         (v2 as TObject).Equals( v1 as TObject ) );
+
+end;
+
+{ TSpreadOperator }
+
+constructor TSpreadOperator.Create;
+begin
+   inherited Create;
+   typeid := spreadId;
+end;
+
+function TSpreadOperator.ToString: String;
+begin
+  result := spreadId;
+end;
+
+function II(values: array of const ) : IValue;
+var
+  i : integer;
+begin
+  result := Void_0;
+  for i := low(values) to High(values) do
+  begin
+    result :=  mkValue(values[i]);
+    if result <> void_0 then
+      exit;
+  end;
+end;
+
+
 initialization
    g_null := TJSONNull.Create;
-   g_spread := mkValue('...');
+   g_spread := TSpreadOperator.Create;
    g_void_0 := TVoid_0.Create;
 
 finalization

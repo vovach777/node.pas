@@ -3,7 +3,7 @@ unit np.core;
 
 interface
   uses np.common, np.winsock, sysutils,Classes, np.libuv, generics.collections, np.buffer,
-      np.eventEmitter;
+      np.eventEmitter, np.value;
   type
 
     PBufferRef = np.buffer.PBufferRef;
@@ -336,10 +336,10 @@ interface
     constructor CreateIPC();
   end;
 
-
   TLoop = class(TEventEmitterComponent)
   private
     check: INPCheck;
+    localRef : IValue<TAnyArray>;
   public
     Fuvloop: puv_loop_t;
     embededTasks: INPAsync;
@@ -348,6 +348,7 @@ interface
     taskCount: integer;
     isTerminated: Boolean;
     loopThread: uv_thread_t;
+    procedure ref(const value: IValue);
     procedure addTask;
     procedure removeTask;
     function now: uint64;
@@ -497,8 +498,6 @@ interface
   function thread_create(p : TProc) : uv_thread_t;
   procedure thread_join(tid: uv_thread_t);
 
-
-
   function NextTick(p: TProc) : IQueueItem;
   function setImmediate(p: Tproc): IQueueItem;
 
@@ -510,6 +509,9 @@ interface
   function stdInRaw : INPStream;
 
   procedure dns_resolve(const addr: UTF8String; const onResolved: TProc<integer,UTF8String>);
+
+  function newArray(values: array of const) : TAnyArray;
+
 
 type
   TNPBarrier = record
@@ -868,6 +870,13 @@ begin
   result := uv_now(uvloop);
 end;
 
+procedure TLoop.ref(const value: IValue);
+begin
+  if not assigned(localRef) then
+    localRef := TAnyArray.Create();
+  localRef.this.Push(value)
+end;
+
 procedure TLoop.removeTask;
 begin
   dec( taskCount );
@@ -903,6 +912,8 @@ begin
   try
     repeat
       while nextTickQueue.emit do;
+      if assigned(localRef) then
+        localRef.this.Length := 0;
       if not checkQueue.isEmpty then
       begin
         check.ref;
@@ -2964,6 +2975,13 @@ function TNPUDP.uvudp: puv_udp_t;
 begin
    result := puv_udp_t( FHandle );
 end;
+
+function newArray(values: array of const) : TAnyArray;
+begin
+   result := TAnyArray.Create(values);
+   loop.ref(result);
+end;
+
 
 end.
 
