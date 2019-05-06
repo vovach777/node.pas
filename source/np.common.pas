@@ -59,6 +59,27 @@ type
        procedure emit(eventId: integer; eventArguments : Pointer = nil);
      end;
 
+   let<T> = record
+   type
+     TLetMethod = procedure(a1:T) of object;
+     class function call(a:T; proc: TProc<T> ) : TProc; overload; static;
+     class function call(a:T; proc: TLetMethod ) : TProc;overload; static;
+   end;
+   let<T,T2> = record
+     type TLetMethod = procedure(a:T;a2:T2) of object;
+     class function call(a:T; a2:T2; proc: TProc<T,T2> ) : TProc; overload; static;
+     class function call(a:T; a2:T2; proc: TLetMethod ) : TProc; overload; static;
+   end;
+   let<T,T2,T3> = record
+     type TLetMethod = procedure(a:T;a2:T2;a3:T3) of object;
+     class function call(a:T; a2:T2; a3:T3; proc: TProc<T,T2,T3> ) : TProc; overload; static;
+     class function call(a:T; a2:T2; a3:T3; proc: TLetMethod ) : TProc; overload; static;
+   end;
+   let<T,T2,T3,T4> = record
+     type TLetMethod = procedure(a1:T;a2:T2;a3:T3;a4:T4) of object;
+     class function call(a:T; a2:T2; a3:T3; a4:T4; proc: TProc<T,T2,T3,T4> ) : TProc; overload; static;
+     class function call(a:T; a2:T2; a3:T3; a4:T4; proc: TLetMethod ) : TProc; overload; static;
+   end;
 
 function h2o(h:THex1) : word; inline; overload;
 function h2o(h:THex2) : word; inline; overload;
@@ -113,6 +134,74 @@ begin
   if assigned(proc) then
     proc();
 end;
+
+   class function let<T>.call(a: T; proc:TProc<T> ) : TProc;
+   begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                    proc(a);
+               end;
+   end;
+  class function let<T>.call(a: T; proc: TLetMethod): TProc;
+  begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                    proc(a);
+               end;
+  end;
+
+   class function let<T,T2>.call(a: T; a2:T2; proc:TProc<T,T2> ) : TProc;
+   begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                   proc(a,a2);
+               end;
+   end;
+   class function let<T,T2>.call(a: T; a2:T2; proc:TLetMethod ) : TProc;
+   begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                   proc(a,a2);
+               end;
+   end;
+   class function let<T,T2,T3>.call(a: T; a2:T2; a3:T3; proc:TProc<T,T2,T3> ) : TProc;
+   begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                   proc(a,a2,a3);
+               end;
+   end;
+   class function let<T,T2,T3>.call(a: T; a2:T2; a3:T3; proc:TLetMethod ) : TProc;
+   begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                   proc(a,a2,a3);
+               end;
+   end;
+   class function let<T,T2,T3,T4>.call(a: T; a2:T2; a3:T3; a4:T4; proc:TProc<T,T2,T3,T4> ) : TProc;
+   begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                    proc(a,a2,a3,a4);
+               end;
+   end;
+   class function let<T,T2,T3,T4>.call(a: T; a2:T2; a3:T3; a4:T4; proc:TLetMethod ) : TProc;
+   begin
+      result:= procedure
+               begin
+                 if assigned(proc) then
+                    proc(a,a2,a3,a4);
+               end;
+   end;
+
+
 
 initialization
    g_FormatUs := TFormatSettings.Create('en-US');
