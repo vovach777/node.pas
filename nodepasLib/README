@@ -1,0 +1,92 @@
+Build on windows
+----------------
+
+get msys2
+setup local library path.
+append to msys2/etc/profile
+
+#-------------------------------
+case "${MSYSTEM}" in
+
+    MINGW32)
+        export C_INCLUDE_PATH=$C_INCLUDE_PATH:/mingw32/local/include
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mingw32/local/lib
+        ;;
+    MINGW64)
+        export C_INCLUDE_PATH=$C_INCLUDE_PATH:/mingw64/local/include
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mingw64/local/lib
+        ;;
+esac
+#-------------------------------
+
+BUILD for 32 Bit windows
+------------------------
+
+start shell for 32 bit build:
+
+msys2_shell.cmd -mingw32
+
+
+>cd /c/download/node.pas/nodepasLib 
+>tar -xzf libuv-v1.32.0.tar.gz 
+>tar -xff openssl-1.1.1d.tar.gz 
+>cd libuv-v1.32.0
+>./configure -with-pic -enable-static --prefix=/mingw32/local
+>make
+>make install
+>cd ../openssl-1.1.1d
+>./config --prefix=/mingw32/local --openssldir=/mingw32/local
+>make
+>install
+>cd ..
+>rm -r libuv-v1.32.0
+>rm -r openssl-1.1.1d
+>./build.sh
+
+
+BUILD for 64 Bit windows
+------------------------
+
+start shell for 64 bit build:
+
+msys2_shell.cmd -mingw64
+
+
+>cd /c/download/node.pas/nodepasLib 
+>tar -xzf libuv-v1.32.0.tar.gz 
+>tar -xff openssl-1.1.1d.tar.gz 
+>cd libuv-v1.32.0
+>./configure -with-pic -enable-static --prefix=/mingw64/local
+>make
+>make install
+>cd ../openssl-1.1.1d
+>./config --prefix=/mingw64/local --openssldir=/mingw64/local
+>make
+>install
+>cd ..
+>rm -r libuv-v1.32.0
+>rm -r openssl-1.1.1d
+>./build.sh
+
+
+Build on Linux
+--------------
+start shell
+
+>cd /c/download/node.pas/nodepasLib 
+>tar -xzf libuv-v1.32.0.tar.gz 
+>tar -xff openssl-1.1.1d.tar.gz 
+>cd libuv-v1.32.0
+>./configure -with-pic -enable-static --prefix=/usr/local
+>make
+>make install
+>cd ../openssl-1.1.1d
+>./config --prefix=/usr/local --openssldir=/usr/local
+>make
+>install
+>cd ..
+>rm -r libuv-v1.32.0
+>rm -r openssl-1.1.1d
+>./build.sh
+
+Deploy your application with libnodepas.so \ nodepaslib32.dll \ nodepaslib64.dll

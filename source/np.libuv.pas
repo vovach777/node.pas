@@ -42,6 +42,11 @@ const
   SIGKILL = 9;
   SIGWINCH = 28;
 
+UV_STDIN_FD   = 0;
+UV_STDOUT_FD  = 1;
+UV_STDERR_FD  = 2;
+
+
   type
 
    ENPException = class(Exception)
@@ -49,6 +54,39 @@ const
      errName : string;
      constructor Create(err: integer);
    end;
+
+Pnodepas_constants = ^Tnodepas_constants;
+Tnodepas_constants = record
+(* fs open() flags supported on other platforms (or mapped on this platform): *)
+    uv_fs_o_direct : Integer;
+    uv_fs_o_directory : Integer;
+    uv_fs_o_dsync : Integer;
+    uv_fs_o_exlock : Integer;
+    uv_fs_o_noatime : Integer;
+    uv_fs_o_noctty : Integer;
+    uv_fs_o_nofollow : Integer;
+    uv_fs_o_nonblock : Integer;
+    uv_fs_o_symlink : Integer;
+    uv_fs_o_sync : Integer;
+
+(* fs open() flags supported on this platform: *)
+    uv_fs_o_append : Integer;
+    uv_fs_o_creat : Integer;
+    uv_fs_o_excl  : Integer;
+    uv_fs_o_random : Integer;
+    uv_fs_o_rdonly : Integer;
+    uv_fs_o_rdwr : Integer;
+    uv_fs_o_sequential : Integer;
+    uv_fs_o_short_lived : Integer;
+    uv_fs_o_temporary : Integer;
+    uv_fs_o_trunc : Integer;
+    uv_fs_o_wronly : Integer;
+    f_ok : Integer;
+    r_ok : Integer;
+    w_ok : Integer;
+    x_ok : Integer;
+end;
+
 //  sockaddr_in = record
 //  end;
 //
@@ -97,28 +135,29 @@ const
     UV_GETNAMEINFO_, UV_ACCEPT_, UV_FS_EVENT_REQ, UV_POLL_REQ, UV_PROCESS_EXIT,
     UV_READ, UV_UDP_RECV, UV_WAKEUP, UV_SIGNAL_REQ, UV_REQ_TYPE_MAX);
 
+
 {$IFDEF WIN32}
 
 const
   LIBUV_FILE = NODEPAS_LIB;
 
-  sizeof_loop_t = 272;
-  sizeof_async_t = 48;
-  sizeof_check_t = 44;
-  sizeof_fs_event_t = 124;
-  sizeof_fs_poll_t = 36;
-  sizeof_handle_t = 32;
-  sizeof_idle_t = 44;
-  sizeof_pipe_t = 304;
-  sizeof_poll_t = 240;
-  sizeof_prepare_t = 44;
-  sizeof_process_t = 120;
-  sizeof_stream_t = 128;
-  sizeof_tcp_t = 152;
-  sizeof_timer_t = 72;
-  sizeof_tty_t = 176;
-  sizeof_udp_t = 272;
-  sizeof_signal_t = 120;
+  sizeof_loop_t = 256;
+  sizeof_async_t = 116;
+  sizeof_check_t = 60;
+  sizeof_fs_event_t = 140;
+  sizeof_fs_poll_t = 52;
+  sizeof_handle_t = 48;
+  sizeof_idle_t = 60;
+  sizeof_pipe_t = 320;
+  sizeof_poll_t = 256;
+  sizeof_prepare_t = 60;
+  sizeof_process_t = 136;
+  sizeof_stream_t = 144;
+  sizeof_tcp_t = 168;
+  sizeof_timer_t = 96;
+  sizeof_tty_t = 196;
+  sizeof_udp_t = 288;
+  sizeof_signal_t = 136;
   sizeof_req_t = 60;
   sizeof_connect_t = 68;
   sizeof_write_t = 92;
@@ -128,11 +167,10 @@ const
   sizeof_work_t = 92;
   sizeof_addrinfo_t = 112;
   sizeof_nameinfo_t = 1288;
-  sizeof_rwlock_t = 32;
-  sizeof_cond_t = 4;
+  sizeof_rwlock_t = 48;
+  sizeof_cond_t = 36;
   sizeof_barrier_t = 40;
   sizeof_mutex_t = 24;
-
 
 {$ENDIF}
 
@@ -176,59 +214,59 @@ sizeof_mutex_t = 40;
 {$ENDIF}
 
 {$IFDEF MSWINDOWS}
-const
-  _O_RDONLY = 0;
-  _O_WRONLY = 1;
-  _O_RDWR = 2;
-  _O_BINARY = $8000;
-  _O_CREAT = $100; (* Create the file if it does not exist. *)
-  _O_TRUNC = $200; (* Truncate the file if it does exist. *)
-  _O_EXCL  = $400; (* Open only if the file does not exist. *)
-  _O_RANDOM = 0;
-
-  _S_IRUSR       = $100;
-  _S_IWUSR       = $80;
-  _S_IXUSR       = $40;
-  _S_IRWUSR      = _S_IRUSR or _S_IWUSR;
-  _S_IRWXU       = _S_IRUSR or _S_IWUSR or _S_IXUSR;
-
-   F_OK = 0;
-   R_OK = 4;
-   W_OK = 2;
-   X_OK = 1;
-
-   {$if defined(_O_APPEND)}
-   UV_FS_O_APPEND  =    _O_APPEND;
-   {$endif}
-   UV_FS_O_CREAT   =    _O_CREAT;
-   UV_FS_O_EXCL    =    _O_EXCL;
-   UV_FS_O_RANDOM  =    _O_RANDOM;
-   UV_FS_O_RDONLY  =    _O_RDONLY;
-   UV_FS_O_RDWR    =    _O_RDWR;
-   {$if defined(_O_SEQUENTIAL)}
-   UV_FS_O_SEQUENTIAL = _O_SEQUENTIAL;
-   {$endif}
-   {$if defined(_O_SHORT_LIVED)}
-   UV_FS_O_SHORT_LIVED = _O_SHORT_LIVED;
-   {$endif}
-   {$if defined(_O_TEMPORARY)}
-   UV_FS_O_TEMPORARY  = _O_TEMPORARY;
-   {$endif}
-   UV_FS_O_TRUNC    =   _O_TRUNC;
-   UV_FS_O_WRONLY   =   _O_WRONLY;
-
-(* fs open() flags supported on other platforms (or mapped on this platform): *)
-    UV_FS_O_DIRECT   =    FILE_FLAG_NO_BUFFERING; (* FILE_FLAG_NO_BUFFERING *)
-    UV_FS_O_DIRECTORY  =  0;
-    UV_FS_O_DSYNC      =  FILE_FLAG_WRITE_THROUGH;
-    UV_FS_O_EXLOCK     =  $10000000; (* EXCLUSIVE SHARING MODE *)
-    UV_FS_O_NOATIME    =  0;
-    UV_FS_O_NOCTTY     =  0;
-    UV_FS_O_NOFOLLOW   =  0;
-    UV_FS_O_NONBLOCK   =  0;
-    UV_FS_O_SYMLINK    =  0;
-    UV_FS_O_SYNC       =  FILE_FLAG_WRITE_THROUGH;
-
+// const
+//  _O_RDONLY = 0;
+//  _O_WRONLY = 1;
+//  _O_RDWR = 2;
+//  _O_BINARY = $8000;
+//  _O_CREAT = $100; (* Create the file if it does not exist. *)
+//  _O_TRUNC = $200; (* Truncate the file if it does exist. *)
+//  _O_EXCL  = $400; (* Open only if the file does not exist. *)
+//  _O_RANDOM = 0;
+//
+//  _S_IRUSR       = $100;
+//  _S_IWUSR       = $80;
+//  _S_IXUSR       = $40;
+//  _S_IRWUSR      = _S_IRUSR or _S_IWUSR;
+//  _S_IRWXU       = _S_IRUSR or _S_IWUSR or _S_IXUSR;
+//
+//   F_OK = 0;
+//   R_OK = 4;
+//   W_OK = 2;
+//   X_OK = 1;
+//
+//   {$if defined(_O_APPEND)}
+//   UV_FS_O_APPEND  =    _O_APPEND;
+//   {$endif}
+//   UV_FS_O_CREAT   =    _O_CREAT;
+//   UV_FS_O_EXCL    =    _O_EXCL;
+//   UV_FS_O_RANDOM  =    _O_RANDOM;
+//   UV_FS_O_RDONLY  =    _O_RDONLY;
+//   UV_FS_O_RDWR    =    _O_RDWR;
+//   {$if defined(_O_SEQUENTIAL)}
+//   UV_FS_O_SEQUENTIAL = _O_SEQUENTIAL;
+//   {$endif}
+//   {$if defined(_O_SHORT_LIVED)}
+//   UV_FS_O_SHORT_LIVED = _O_SHORT_LIVED;
+//   {$endif}
+//   {$if defined(_O_TEMPORARY)}
+//   UV_FS_O_TEMPORARY  = _O_TEMPORARY;
+//   {$endif}
+//   UV_FS_O_TRUNC    =   _O_TRUNC;
+//   UV_FS_O_WRONLY   =   _O_WRONLY;
+//
+//(* fs open() flags supported on other platforms (or mapped on this platform): *)
+//    UV_FS_O_DIRECT   =    FILE_FLAG_NO_BUFFERING; (* FILE_FLAG_NO_BUFFERING *)
+//    UV_FS_O_DIRECTORY  =  0;
+//    UV_FS_O_DSYNC      =  FILE_FLAG_WRITE_THROUGH;
+//    UV_FS_O_EXLOCK     =  $10000000; (* EXCLUSIVE SHARING MODE *)
+//    UV_FS_O_NOATIME    =  0;
+//    UV_FS_O_NOCTTY     =  0;
+//    UV_FS_O_NOFOLLOW   =  0;
+//    UV_FS_O_NONBLOCK   =  0;
+//    UV_FS_O_SYMLINK    =  0;
+//    UV_FS_O_SYNC       =  FILE_FLAG_WRITE_THROUGH;
+//
 
 type
   SIZE_T = NativeUInt;
@@ -268,11 +306,6 @@ const
 
   sizeof_os_sock_t = sizeof(uv_os_sock_t);
   sizeof_os_fd_t  = sizeof(uv_os_fd_t);
-
-UV_STDIN_FD  = uv_os_fd_t(-10);
-UV_STDOUT_FD = uv_os_fd_t(-11);
-UV_STDERR_FD = uv_os_fd_t(-12);
-
 
 {$ENDIF}
 
@@ -315,53 +348,46 @@ UV_STDERR_FD = uv_os_fd_t(-12);
   //sizeof_os_sock_t = 4;
   //sizeof_os_fd_t  = 4;
 
-
-UV_STDIN_FD   = 0;
-UV_STDOUT_FD  = 1;
-UV_STDERR_FD  = 2;
-
-
- const
-  _O_RDONLY = O_RDONLY;
-  _O_WRONLY = O_WRONLY;
-  _O_RDWR = O_RDWR;
-//  _O_BINARY = _O_BINARY;
-  _O_CREAT = O_CREAT; (* Create the file if it does not exist. *)
-  _O_TRUNC = O_TRUNC; (* Truncate the file if it does exist. *)
-  _O_EXCL  = O_EXCL; (* Open only if the file does not exist. *)
-  _S_IRUSR       = S_IRUSR;
-  _S_IWUSR       = S_IWUSR;
-  _S_IXUSR       = S_IXUSR;
-  _S_IRWUSR      = S_IRUSR or S_IWUSR;
-  _S_IRWXU       = S_IRUSR or S_IWUSR or S_IXUSR;
-
-(* fs open() flags supported on this platform: *)
-   UV_FS_O_APPEND =      O_APPEND;
-   UV_FS_O_CREAT  =      O_CREAT;
-   UV_FS_O_DIRECT =      O_DIRECT;
-   {$if defined(O_DIRECTORY)}
-   UV_FS_O_DIRECTORY =   O_DIRECTORY;
-   {$endif}
-    UV_FS_O_DSYNC   =     O_DSYNC;
-    UV_FS_O_EXCL    =     O_EXCL;
-    UV_FS_O_EXLOCK  =     O_EXLOCK;
-    UV_FS_O_NOATIME =     O_NOATIME;
-    UV_FS_O_NOCTTY  =     O_NOCTTY;
-    UV_FS_O_NOFOLLOW =    O_NOFOLLOW;
-    UV_FS_O_NONBLOCK  =   O_NONBLOCK;
-    UV_FS_O_RDONLY   =    O_RDONLY;
-    UV_FS_O_RDWR    =     O_RDWR;
-    UV_FS_O_SYMLINK  =    O_SYMLINK;
-    UV_FS_O_SYNC     =    O_SYNC;
-    UV_FS_O_TRUNC    =    O_TRUNC;
-    UV_FS_O_WRONLY   =    O_WRONLY;
-
- (* fs open() flags supported on other platforms: *)
-    UV_FS_O_RANDOM     =   0;
-    UV_FS_O_SHORT_LIVED=   0;
-    UV_FS_O_SEQUENTIAL =   0;
-    UV_FS_O_TEMPORARY  =   0;
-
+//  _O_RDONLY = O_RDONLY;
+//  _O_WRONLY = O_WRONLY;
+//  _O_RDWR = O_RDWR;
+////  _O_BINARY = _O_BINARY;
+//  _O_CREAT = O_CREAT; (* Create the file if it does not exist. *)
+//  _O_TRUNC = O_TRUNC; (* Truncate the file if it does exist. *)
+//  _O_EXCL  = O_EXCL; (* Open only if the file does not exist. *)
+//  _S_IRUSR       = S_IRUSR;
+//  _S_IWUSR       = S_IWUSR;
+//  _S_IXUSR       = S_IXUSR;
+//  _S_IRWUSR      = S_IRUSR or S_IWUSR;
+//  _S_IRWXU       = S_IRUSR or S_IWUSR or S_IXUSR;
+//
+//(* fs open() flags supported on this platform: *)
+//   UV_FS_O_APPEND =      O_APPEND;
+//   UV_FS_O_CREAT  =      O_CREAT;
+//   UV_FS_O_DIRECT =      O_DIRECT;
+//   {$if defined(O_DIRECTORY)}
+//   UV_FS_O_DIRECTORY =   O_DIRECTORY;
+//   {$endif}
+//    UV_FS_O_DSYNC   =     O_DSYNC;
+//    UV_FS_O_EXCL    =     O_EXCL;
+//    UV_FS_O_EXLOCK  =     O_EXLOCK;
+//    UV_FS_O_NOATIME =     O_NOATIME;
+//    UV_FS_O_NOCTTY  =     O_NOCTTY;
+//    UV_FS_O_NOFOLLOW =    O_NOFOLLOW;
+//    UV_FS_O_NONBLOCK  =   O_NONBLOCK;
+//    UV_FS_O_RDONLY   =    O_RDONLY;
+//    UV_FS_O_RDWR    =     O_RDWR;
+//    UV_FS_O_SYMLINK  =    O_SYMLINK;
+//    UV_FS_O_SYNC     =    O_SYNC;
+//    UV_FS_O_TRUNC    =    O_TRUNC;
+//    UV_FS_O_WRONLY   =    O_WRONLY;
+//
+// (* fs open() flags supported on other platforms: *)
+//    UV_FS_O_RANDOM     =   0;
+//    UV_FS_O_SHORT_LIVED=   0;
+//    UV_FS_O_SEQUENTIAL =   0;
+//    UV_FS_O_TEMPORARY  =   0;
+//
 
  type
   SIZE_T = NativeUInt;
@@ -782,6 +808,8 @@ type
   end;
 
   uv_loop_t = uv_loop_s;
+
+function uv_get_constants : Pnodepas_constants;
 
 function UV_ONCE_INIT : uv_once_t;
 
@@ -1379,7 +1407,7 @@ function uv_fs_get_type(const req: puv_fs_t) : uv_fs_type; cdecl;
 function uv_fs_get_path(const req: puv_fs_t) : PUTF8Char; cdecl;
 function uv_fs_get_ptr(const req: puv_fs_t) : Pointer; cdecl;
 function uv_fs_get_result(const req: puv_fs_t) : ssize_t; cdecl;
-function uv_fs_get_statbuf(req:uv_fs_t): puv_stat_t; cdecl;
+function uv_fs_get_statbuf(const req:uv_fs_t): puv_stat_t; cdecl;
 
 function uv_fs_close(loop: puv_loop_t; req: puv_fs_t; &file: uv_file;
   cb: uv_fs_cb): Integer; cdecl;
@@ -1749,6 +1777,8 @@ function IsIPv6(const ip: UTF8String) : Boolean; inline;
 procedure np_ok(res : integer);
 
 implementation
+
+function uv_get_constants; external NODEPAS_LIB;
 
 function uv_version; external LIBUV_FILE;
 

@@ -63,7 +63,7 @@ implementation
 
  type
    PReqInternal = ^TReqInternal;
-   TReqInternal = record
+   TReqInternal = packed record
       base: uv_fs_t;
       //path: UTF8String; //keep ref
       callback_open:   TProc<PNPError,uv_file>;
@@ -86,6 +86,7 @@ implementation
       direntResWt : TList<fs.TDirentWithTypes>;
       direntRes   : TList<UTF8String>;
       direntItem : fs.TDirentWithTypes;
+      stat : puv_stat_t;
    begin
       cast := PReqInternal(req);
       perror := nil;
@@ -112,7 +113,10 @@ implementation
                    if assigned( cast.callback_stat) then
                    begin
                       if res >= 0 then
-                         cast.callback_stat(nil, uv_fs_get_statbuf(cast.base))
+                      begin
+                         stat := uv_fs_get_statbuf(cast.base);
+                         cast.callback_stat(nil, stat);
+                      end
                       else
                         cast.callback_stat(perror, nil);
                    end;

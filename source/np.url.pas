@@ -35,6 +35,7 @@ Interface
        function ToString : string;
        property Schema : string read FSchema;
        property UserName: string read FUserName;
+       property Password: string read FPassword;
        property HostName: string read FHostName;
        property Host : string read FHost;
        property Port: word read GetPort;

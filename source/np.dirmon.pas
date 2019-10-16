@@ -261,7 +261,7 @@ begin
        end;
        Fupdate.changeTime := stat1.st_mtim.toTimeStamp;
        SetLength( Fupdate.content, stat1.st_size );
-       fs.open(path,UV_FS_O_RDONLY,oct666,
+       fs.open(path,np_const.uv_fs_o_rdonly,oct666,
              procedure (error: PNPError; fd : uv_file)
              begin
                if assigned(error) then

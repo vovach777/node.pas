@@ -7,7 +7,8 @@ program checkLib;
 uses
   System.SysUtils,
   np.libuv,
-  np.Core;
+  np.Core,
+  np.fs;
 
   procedure gen_size;
   begin
@@ -110,6 +111,7 @@ begin
     // WriteLn('tcp_accept: ', uv_tcp_accept_size, ' ', integer(uv_tcp_accept_size) - sizeof(uv_tcp_accept_t));
     // WriteLn('pipe_accept: ', uv_pipe_accept_size, ' ', integer(uv_pipe_accept_size) - sizeof(uv_pipe_accept_t));
      WriteLn('PASSED');
+
 
   except
     on E: Exception do

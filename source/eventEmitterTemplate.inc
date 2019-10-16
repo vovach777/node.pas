@@ -25,6 +25,7 @@
        function once(id: integer; p : TProc) : IEventHandler; overload; inline;
        function once(id: integer; p : TProc_APointer) : IEventHandler; overload; inline;
        procedure RemoveAll;
+       procedure Remove(var handler: IEventHandler);
        function CountOf(id : integer) : int64;
        function isEmpty: Boolean;
        procedure emit(eventId: integer; eventArguments : Pointer = nil); overload;
@@ -109,6 +110,16 @@ begin
     gc.Count := 0;
   end;
 end;
+
+procedure TEventEmitter.Remove(var handler: IEventHandler);
+begin
+   if assigned(handler) then
+   begin
+     handler.remove;
+     handler := nil;
+   end;
+end;
+
 
 procedure TEventEmitter._remove(eh: IEventHandler);
 var

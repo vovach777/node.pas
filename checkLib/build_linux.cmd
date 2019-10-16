@@ -1,1 +1,0 @@
-"C:\Program Files (x86)\Embarcadero\Studio\19.0\bin\dcclinux64.exe" -NU"J:\node.pas" -U"J:\node.pas\node.pas\source" -O"J:\lib" -O"." --linker-option:-lc_nonshared %1

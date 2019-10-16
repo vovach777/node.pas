@@ -27,6 +27,7 @@ type
 {$ENDIF}
 
   ULONG = Cardinal;
+  DWORD = Cardinal;
   Long = Integer;
 
   THex1 = 0..$F;
@@ -54,6 +55,7 @@ type
        function once(id: integer; p : TProc) : IEventHandler; overload;
        function once(id: integer; p : TProc_APointer) : IEventHandler;overload;
        procedure RemoveAll;
+       procedure Remove(var handler: IEventHandler);
        function isEmpty: Boolean;
        function CountOf(id : integer) : int64;
        procedure emit(eventId: integer; eventArguments : Pointer = nil);
@@ -89,7 +91,6 @@ function CStrLen(const str: PAnsiChar) : SIZE_T;
 function CStrUtf8( const p: PUtf8Char) : UTF8String;
 
 procedure scope(const proc: TProc );
-
 
 var
   g_FormatUs : TFormatSettings;

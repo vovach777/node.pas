@@ -490,6 +490,8 @@ interface
 
   function SetTimer(cb:TProc; Atimeout,Arepeat:uint64) : INPTimer;
   procedure Cleartimer(var handle: INPTimer);
+  procedure ClearInterval(var handle: INPTimer); inline;
+  procedure ClearTimeout(var handle: INPTimer); inline;
   function SetInterval(p: Tproc; AInterval: Uint64): INPTimer;
   function SetTimeout(p: Tproc; ATimeout: Uint64): INPTimer;
 
@@ -511,6 +513,7 @@ interface
   procedure dns_resolve(const addr: UTF8String; const onResolved: TProc<integer,UTF8String>);
 
   function newArray(values: array of const) : TAnyArray;
+  function np_const : Pnodepas_constants;
 
 
 type
@@ -593,57 +596,10 @@ type
      {$IFDEF MSWINDOWS}
        function uv_dup( fd: uv_os_fd_t) : uv_os_fd_t;
        begin
-         result := INVALID_HANDLE_VALUE;
-         DuplicateHandle(GetCurrentProcess, fd, GetCurrentProcess, @result,0,FALSE, DUPLICATE_SAME_ACCESS);
+         if not DuplicateHandle(GetCurrentProcess, fd, GetCurrentProcess, @result,0, false, DUPLICATE_SAME_ACCESS) then
+           result := INVALID_HANDLE_VALUE;
        end;
      {$ENDIF}
-
-    function handle_tty(fd : uv_os_fd_t) : uv_os_fd_t;
-    begin
-      {$IFDEF MSWINDOWS}
-       case fd  of
-         UV_STDIN_FD:
-            begin
-//             fd := CreateFile('CONIN$',
-//                           GENERIC_READ or GENERIC_WRITE,
-//                           FILE_SHARE_READ or FILE_SHARE_WRITE,
-//                           0,
-//                           OPEN_EXISTING,
-//                           FILE_ATTRIBUTE_NORMAL,
-//                           0);
-//               SetStdHandle(STD_INPUT_HANDLE,fd);
-               fd := uv_dup( GetStdHandle(STD_INPUT_HANDLE) );
-             end;
-         UV_STDOUT_FD:
-             begin
-               fd := uv_dup( GetStdHandle(STD_OUTPUT_HANDLE) );
-//               fd := CreateFile('CONOUT$',
-//                             GENERIC_READ or GENERIC_WRITE,
-//                             FILE_SHARE_READ or FILE_SHARE_WRITE,
-//                             0,
-//                             OPEN_EXISTING,
-//                             FILE_ATTRIBUTE_NORMAL,
-//                             0);
-//                SetStdHandle(STD_OUTPUT_HANDLE,fd);
-               end;
-         UV_STDERR_FD:
-             begin
-//               fd := CreateFile('CONOUT$',
-//                           GENERIC_READ or GENERIC_WRITE,
-//                           FILE_SHARE_READ or FILE_SHARE_WRITE,
-//                           0,
-//                           OPEN_EXISTING,
-//                           FILE_ATTRIBUTE_NORMAL,
-//                           0);
-//                SetStdHandle(STD_ERROR_HANDLE,fd);
-               fd := uv_dup( GetStdHandle(STD_ERROR_HANDLE) );
-             end;
-       end;
-       {$ENDIF}
-
-       exit(fd);
-    end;
-
 
   function loop : TLoop;
   begin
@@ -1841,6 +1797,15 @@ type
     end;
   end;
 
+  procedure ClearInterval(var handle: INPTimer);
+  begin
+    Cleartimer(handle);
+  end;
+  procedure ClearTimeout(var handle: INPTimer);
+  begin
+    Cleartimer(handle);
+  end;
+
 { TNPTimer }
 
 procedure TNPTimer.Again;
@@ -2236,16 +2201,6 @@ var
   fd2 :  uv_os_fd_t;
 
 begin
-//  try
-    FHandleType := uv_guess_handle(fd);
-  {$IFDEF MSWINDOWS}
-    case fd of
-      UV_STDIN_FD,
-      UV_STDOUT_FD,
-      UV_STDERR_FD:
-         fd := handle_tty(fd);
-    end;
-  {$ENDIF}
     FHandleType := uv_guess_handle(fd);
     case FHandleType of
       UV_TTY:
@@ -2269,18 +2224,13 @@ begin
       else
       begin
            //OutputDebugString(PChar(Format('stdout => type(%d)',[ord(ht)])));
-           raise Exception.Create('Can not create tty!');
+           raise Exception.Create('Init stdout failed!');
       end;
     end;
-//  except
-//    OutputDebugString('can not create tty!');
-//     raise;
-//  end;
 end;
 
 destructor TNPSTDOUT.Destroy;
 begin
-  //Writeln('tty closed');
   inherited;
 end;
 
@@ -2398,7 +2348,6 @@ end;
 
 constructor TNPTTY.Create(fd: uv_os_fd_t);
 begin
-  fd := handle_tty( fd );
   assert(uv_guess_handle(fd) = UV_TTY);
   inherited Create(UV_TTY);
   FTTY := puv_tty_t(FHandle);
@@ -2417,7 +2366,7 @@ end;
 constructor TNPTTY_INPUT.Create(raw:Boolean);
 begin
   inherited Create(UV_TTY);
-   np_ok( uv_tty_init( loop.uvloop,puv_tty_t(FHandle), handle_tty(UV_STDIN_FD), 1) );
+   np_ok( uv_tty_init( loop.uvloop,puv_tty_t(FHandle), UV_STDIN_FD, 1) );
    if raw then
       uv_tty_set_mode(puv_tty_t(FHandle), UV_TTY_MODE_RAW);
    FActiveRef := self;
@@ -2980,6 +2929,11 @@ function newArray(values: array of const) : TAnyArray;
 begin
    result := TAnyArray.Create(values);
    loop.ref(result);
+end;
+
+function np_const : Pnodepas_constants;
+begin
+   result := uv_get_constants;
 end;
 
 

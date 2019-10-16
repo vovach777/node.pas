@@ -7,7 +7,6 @@
 size_t uv_tcp_accept_size() {
    return sizeof(uv_tcp_accept_t);
 }
-
 size_t uv_pipe_accept_size() {
    return sizeof(uv_pipe_accept_t);
 }
@@ -141,8 +140,8 @@ unsigned int http_parser_get_flags(const http_parser * parser) {
    return parser->flags;
 }
 
-
 constants_t constants = {
+/* fs open() flags supported on other platforms (or mapped on this platform): */
     UV_FS_O_DIRECT,
     UV_FS_O_DIRECTORY,
     UV_FS_O_DSYNC,
@@ -152,7 +151,25 @@ constants_t constants = {
     UV_FS_O_NOFOLLOW,
     UV_FS_O_NONBLOCK,
     UV_FS_O_SYMLINK,
-    UV_FS_O_SYNC      
+    UV_FS_O_SYNC,
+
+/* fs open() flags supported on this platform: */
+    UV_FS_O_APPEND,
+    UV_FS_O_CREAT,
+    UV_FS_O_EXCL,
+    UV_FS_O_RANDOM,
+    UV_FS_O_RDONLY,
+    UV_FS_O_RDWR,
+    UV_FS_O_SEQUENTIAL,
+    UV_FS_O_SHORT_LIVED,
+    UV_FS_O_TEMPORARY,
+    UV_FS_O_TRUNC,
+    UV_FS_O_WRONLY,
+
+    F_OK,
+    R_OK,
+    W_OK,
+    X_OK
 };
 pconstants_t uv_get_constants() {
      return &constants;
