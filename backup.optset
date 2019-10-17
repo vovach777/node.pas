@@ -5,8 +5,13 @@
         <DCC_CBuilderOutput>All</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <SanitizedProjectName>Node_pas</SanitizedProjectName>
-        <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
+        <DCC_DcuOutput>.\$(Platform)\$(Config)\dcu</DCC_DcuOutput>
         <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
+        <DCC_BpiOutput>.\$(Platform)\$(Config)\cpp</DCC_BpiOutput>
+        <DCC_HppOutput>.\$(Platform)\$(Config)\cpp</DCC_HppOutput>
+        <DCC_ObjOutput>.\$(Platform)\$(Config)\cpp</DCC_ObjOutput>
+        <DCC_BplOutput>.\$(Platform)\$(Config)\</DCC_BplOutput>
+        <DCC_DcpOutput>.\$(Platform)\$(Config)\</DCC_DcpOutput>
     </PropertyGroup>
     <ProjectExtensions>
         <Borland.Personality>Delphi.Personality.12</Borland.Personality>

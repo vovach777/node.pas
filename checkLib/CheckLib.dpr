@@ -6,6 +6,7 @@ program checkLib;
 
 uses
   System.SysUtils,
+  np.openSSL,
   np.libuv,
   np.Core,
   np.fs;
@@ -49,6 +50,8 @@ uses
 
 begin
   try
+    WriteLn('Libuv: ', uv_version_string );
+    WriteLn('OpenSSL: ', OpenSSL_version(t_OPENSSL_VERSION) );
 //    assert( uv_handle_size(UV_HANDLE) = uv_handle_size(UV_HANDLE), 'handle failed');
     assert( sizeof(uv_loop_t) = uv_loop_size, 'loop failed');
     assert( uv_handle_size(UV_ASYNC) = sizeof(uv_async_t), 'async failed');
