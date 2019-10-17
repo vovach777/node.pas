@@ -5,7 +5,7 @@ interface
 
 const
 {$IFDEF LINUX64}
-  NODEPAS_LIB = 'nodepaslib.so';
+  NODEPAS_LIB = 'libnodepas.so';
 {$ENDIF}
 {$IFDEF WIN64}
    NODEPAS_LIB = 'nodepaslib64.dll';

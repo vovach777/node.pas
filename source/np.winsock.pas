@@ -183,7 +183,7 @@ To deal with this, I use the FPC predefined FPC_REQUIRES_PROPER_ALIGNMENT.
 //{$ENDIF}
 
 uses
-  SysUtils, Windows, np.common;
+  System.SysUtils, WinApi.Windows, np.common;
 
 type
   SIZE_T = NativeUint;
@@ -5150,10 +5150,10 @@ begin
       if LError = 0 then begin
         Exit;
       end;
-      Windows.FreeLibrary(hWinSockDll);
+      WinApi.Windows.FreeLibrary(hWinSockDll);
       hWinSockDll := 0;
     end else begin
-      LError := Windows.GetLastError;
+      LError := WinApi.Windows.GetLastError;
     end;
     raise EIdWinsockStubError.Build(LError, RSWinsockLoadError, [WINSOCK2_DLL]);
   end;
@@ -5166,7 +5166,7 @@ begin
   if hMSWSockDll = 0 then begin
     hMSWSockDll := SafeLoadLibrary(MSWSOCK_DLL);
     if hMSWSockDll = 0 then begin
-      raise EIdWinsockStubError.Build(Windows.GetLastError, RSWinsockLoadError, [MSWSOCK_DLL]);
+      raise EIdWinsockStubError.Build(WinApi.Windows.GetLastError, RSWinsockLoadError, [MSWSOCK_DLL]);
     end;
   end;
 end;
@@ -5197,7 +5197,7 @@ begin
     inherited Create(FTitle);
   end else
   begin
-    FWin32ErrorMessage := SysUtils.SysErrorMessage(AWin32Error);
+    FWin32ErrorMessage := System.SysUtils.SysErrorMessage(AWin32Error);
     inherited Create(FTitle + ': ' + FWin32ErrorMessage);    {Do not Localize}
   end;
 end;
@@ -5215,7 +5215,7 @@ begin
   if hDll = 0 then begin
     raise EIdWinsockStubError.Build(WSANOTINITIALISED, RSWinsockCallError, [AName]);
   end;
-  Result := Windows.GetProcAddress(hDll, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(AName));
+  Result := WinApi.Windows.GetProcAddress(hDll, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(AName));
   if Result = nil then begin
     raise EIdWinsockStubError.Build(WSAEINVAL, RSWinsockCallError, [AName]);
   end;
@@ -6518,7 +6518,7 @@ end;
 function IN6_ADDR_EQUAL(const a: PIn6Addr; const b: PIn6Addr): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  Result := SysUtils.CompareMem(a, b, SIZE_TIN6ADDR);
+  Result := System.SysUtils.CompareMem(a, b, SIZE_TIN6ADDR);
 end;
 
 function IN6_IS_ADDR_UNSPECIFIED(const a: PIn6Addr): Boolean;

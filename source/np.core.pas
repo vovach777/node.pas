@@ -534,7 +534,7 @@ const
 
 implementation
  {$IFDEF MSWINDOWS}
-  uses windows, np.fs;
+  uses WinApi.Windows, np.fs;
 {$ELSE}
   uses np.fs;
  {$ENDIF}
@@ -2250,13 +2250,14 @@ begin
     exit;
   if is_pipe then
   begin
+     FStream.write(pbuf);
     //BUG WA
-     buf2 := Buffer.Create(pBuf);
-     FStream.write(buf2,
-             procedure
-             begin
-               buf2 := Buffer.Null;
-             end);
+//     buf2 := Buffer.Create(pBuf);
+//     FStream.write(buf2,
+//             procedure
+//             begin
+//               buf2 := Buffer.Null;
+//             end);
   end
   else
   if is_tty then

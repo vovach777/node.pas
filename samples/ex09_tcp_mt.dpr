@@ -9,15 +9,14 @@ uses
   np.Core,
   np.libuv,
   np.buffer,
-  np.Ut,
-  WinSock2;
+  np.Ut;
 
   const
   {$IFDEF MSWINDOWS}
     PIPE_NAME = '\\.\pipe\ED9900E6-2A34-470B-9E89-1A9C7C723635\%d\%d';
   {$ENDIF}
   {$IFDEF LINUX}
-    PIPE_NAME = '/tmp/ED9900E6-2A34-470B-9E89-1A9C7C723635/%d/%d';
+    PIPE_NAME =  '/tmp/ED9900E6-2A34-470B-9E89-1A9C7C723635-%d-%d';
   {$ENDIF}
 
     MAX_WORKERS  = 3;
@@ -51,61 +50,77 @@ uses
           socket_recv: INPPipe;
           PipeName : string;
         begin
-           workers[num].loop := loop;
-           socket_recv := TNPPipe.Create;
-           pipeName := Format(PIPE_NAME, [uv_os_getpid(),num]);
-           socket_recv.bind( pipeName );
-           socket_recv.setOnClient(
-              procedure(_server: INPPipe)
-              var
-                clientTCP : INPTCPStream;
-                clientPipe: INPPipe;
-              begin
-                logme(Format('%s>new ipc client',[pipeName]));
-                clientPipe := TNPPipe.CreateIPC;
-                clientPipe.accept(_server);
-                clientPipe.setOnData(
-                    procedure (buf: pBufferRef)
-                    var
-                       fd : uv_os_fd_t;
-                       origSocket : string;
-                    begin
-                      origSocket := buf.AsUtf8String;
-                     logme(Format('%s>data: "%s"',[pipeName, origSocket]));
-                      while clientPipe.get_pending_count > 0 do
+           try
+           try
+//             WriteLn('thread ',num,'created!');
+             workers[num].loop := loop;
+             socket_recv := TNPPipe.Create;
+             pipeName :=  Format(PIPE_NAME, [uv_os_getpid(),num]);
+             socket_recv.bind(  pipeName );
+//             WriteLn('before chmod');
+//             socket_recv.set_chmod( UV_READABLE or UV_WRITABLE );
+             socket_recv.setOnClient(
+                procedure(_server: INPPipe)
+                var
+                  clientTCP : INPTCPStream;
+                  clientPipe: INPPipe;
+                begin
+                  logme(Format('%s>new ipc client',[pipeName]));
+                  clientPipe := TNPPipe.CreateIPC;
+                  clientPipe.accept(_server);
+                  clientPipe.setOnData(
+                      procedure (buf: pBufferRef)
+                      var
+                         fd : uv_os_fd_t;
+                         origSocket : string;
                       begin
-                           if clientPipe.get_pending_type = UV_TCP then
-                           begin
+                        origSocket := buf.AsUtf8String;
+                       logme(Format('%s>data: "%s"',[pipeName, origSocket]));
+                        while clientPipe.get_pending_count > 0 do
+                        begin
+                             if clientPipe.get_pending_type = UV_TCP then
+                             begin
 
-                             clientTCP := TNPTCPStream.CreateFromIPC(clientPipe);
+                               clientTCP := TNPTCPStream.CreateFromIPC(clientPipe);
 
-                             np_ok( uv_fileno(clientTCP._uv_handle, fd) );
-                             logme(Format('%s> handle received %u',[ PipeName, fd]));
+                               np_ok( uv_fileno(clientTCP._uv_handle, fd) );
+                               logme(Format('%s> handle received %u',[ PipeName, fd]));
 
-                             clientTCP.set_nodelay(true);
-                             clientTCP.setOnData(
-                                 procedure (data:PBufferRef)
-                                  begin
-                                   clientTCP.write('orig socket: '+origSocket+Format(' shared socket: %6d',[fd])+' echo back:'+data.AsUtf8String);
-                                 end);
-                             clientTCP.setOnClose(
-                                 procedure
-                                 begin
-                                    logme(Format('%s> ipc client disconnected',[PipeName]));
-                                 end
-                             );
-                           end;
-                      end;
-                   end);
-              end);
-           socket_recv.listen(128);
-           logme(Format( '%d worker start!',[num] ));
-           if uv_barrier_wait(@barrier) > 0 then
-             uv_barrier_destroy(@barrier);
+                               clientTCP.set_nodelay(true);
+                               clientTCP.setOnData(
+                                   procedure (data:PBufferRef)
+                                    begin
+                                     clientTCP.write('orig socket: '+origSocket+Format(' shared socket: %6d',[fd])+' echo back:'+data.AsUtf8String);
+                                   end);
+                               clientTCP.setOnClose(
+                                   procedure
+                                   begin
+                                      logme(Format('%s> ipc client disconnected',[PipeName]));
+                                   end
+                               );
+                             end;
+                        end;
+                     end);
+                end);
+//             WriteLn('before listen');
+             socket_recv.listen(128);
+//             WriteLn('after listen');
+             logme(Format( '%d worker start!',[num] ));
+
+           finally
+             if uv_barrier_wait(@barrier) > 0 then
+             begin
+               uv_barrier_destroy(@barrier);
+             end;
+           end;
 
            loophere;
            //OutputDebugStr('%d worker end!',[num]);
            logme(Format('%d worker end!',[num] ));
+           except
+              on E:Exception do
+                  WriteLn('exceptin ',num,' ',e.Message);
+           end;
         end
      );
 
@@ -118,6 +133,7 @@ uses
      workers[0].loop := loop;
      workers[0].thread := 0;
 
+
     logme('<ENTER> - Add task to worker');
     logme('<ESC> - shutdown');
 
@@ -125,8 +141,11 @@ uses
      begin
        init_worker(i);
      end;
+
      if uv_barrier_wait(@barrier) > 0 then
+     begin
        uv_barrier_destroy(@barrier);
+     end;
   end;
 
   procedure get_connector(num : integer; cb : TProc<INPPipe>);

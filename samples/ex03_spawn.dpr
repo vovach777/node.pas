@@ -29,7 +29,11 @@ begin
                  stdout.PrintLn(Format('process terminated with code %d',[exit_code]));
               end
            );
+          {$IFDEF MSWINDOWS}
           spawn.args.DelimitedText := 'ex02_timers.exe';
+          {$ELSE}
+          spawn.args.DelimitedText := './ex02_timers';
+          {$ENDIF}
           cp_stdout := TNPPipe.Create();
           spawn.stdio[1].flags := UV_CREATE_PIPE or UV_WRITABLE_PIPE;
           spawn.stdio[1].stream := puv_stream_t( cp_stdout._uv_handle );

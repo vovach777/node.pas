@@ -12,38 +12,38 @@ uses
 
   procedure gen_size;
   begin
-     WriteLn( 'sizeof_loop_t = ',uv_loop_size);
-     WriteLn( 'sizeof_async_t = ', uv_handle_size(UV_ASYNC));
-     WriteLn( 'sizeof_check_t = ', uv_handle_size(UV_CHECK));
-     WriteLn( 'sizeof_fs_event_t = ', uv_handle_size(UV_FS_EVENT_));
-     WriteLn( 'sizeof_fs_poll_t = ', uv_handle_size(UV_FS_POLL));
-     WriteLn( 'sizeof_handle_t = ', uv_handle_size(UV_HANDLE));
-     WriteLn( 'sizeof_idle_t = ',uv_handle_size(UV_IDLE));
-     WriteLn( 'sizeof_pipe_t = ', uv_handle_size(UV_NAMED_PIPE));
-     WriteLn( 'sizeof_poll_t = ', uv_handle_size(UV_POLL));
-     WriteLn( 'sizeof_prepare_t = ', uv_handle_size(UV_PREPARE));
-     WriteLn( 'sizeof_process_t = ', uv_handle_size(UV_PROCESS));
-     WriteLn( 'sizeof_stream_t = ', uv_handle_size(UV_STREAM));
-     WriteLn( 'sizeof_tcp_t = ', uv_handle_size(UV_TCP));
-     WriteLn( 'sizeof_timer_t = ', uv_handle_size(UV_TIMER));
-     WriteLn( 'sizeof_tty_t = ', uv_handle_size(UV_TTY));
-     WriteLn( 'sizeof_udp_t = ', uv_handle_size(UV_UDP));
-     WriteLn( 'sizeof_signal_t = ', uv_handle_size(UV_SIGNAL));
+     WriteLn( 'sizeof_loop_t = ',uv_loop_size,';');
+     WriteLn( 'sizeof_async_t = ', uv_handle_size(UV_ASYNC),';');
+     WriteLn( 'sizeof_check_t = ', uv_handle_size(UV_CHECK),';');
+     WriteLn( 'sizeof_fs_event_t = ', uv_handle_size(UV_FS_EVENT_),';');
+     WriteLn( 'sizeof_fs_poll_t = ', uv_handle_size(UV_FS_POLL),';');
+     WriteLn( 'sizeof_handle_t = ', uv_handle_size(UV_HANDLE),';');
+     WriteLn( 'sizeof_idle_t = ',uv_handle_size(UV_IDLE),';');
+     WriteLn( 'sizeof_pipe_t = ', uv_handle_size(UV_NAMED_PIPE),';');
+     WriteLn( 'sizeof_poll_t = ', uv_handle_size(UV_POLL),';');
+     WriteLn( 'sizeof_prepare_t = ', uv_handle_size(UV_PREPARE),';');
+     WriteLn( 'sizeof_process_t = ', uv_handle_size(UV_PROCESS),';');
+     WriteLn( 'sizeof_stream_t = ', uv_handle_size(UV_STREAM),';');
+     WriteLn( 'sizeof_tcp_t = ', uv_handle_size(UV_TCP),';');
+     WriteLn( 'sizeof_timer_t = ', uv_handle_size(UV_TIMER),';');
+     WriteLn( 'sizeof_tty_t = ', uv_handle_size(UV_TTY),';');
+     WriteLn( 'sizeof_udp_t = ', uv_handle_size(UV_UDP),';');
+     WriteLn( 'sizeof_signal_t = ', uv_handle_size(UV_SIGNAL),';');
 
-      WriteLn('sizeof_req_t = ',      uv_req_size(UV_REQ));
-      WriteLn('sizeof_connect_t = ',  uv_req_size(UV_CONNECT));
-      WriteLn('sizeof_write_t = ',    uv_req_size(UV_WRITE_));
-      WriteLn('sizeof_shutdown_t = ', uv_req_size(UV_SHUTDOWN_));
-      WriteLn('sizeof_udp_send_t = ', uv_req_size(UV_UDP_SEND_));
-      WriteLn('sizeof_fs_t = ',       uv_req_size(UV_FS));
-      WriteLn('sizeof_work_t = ',     uv_req_size(UV_WORK));
-      WriteLn('sizeof_addrinfo_t = ', uv_req_size(UV_GETADDRINFO_));
-      WriteLn('sizeof_nameinfo_t = ', uv_req_size(UV_GETNAMEINFO_));
+     WriteLn('sizeof_req_t = ',      uv_req_size(UV_REQ),';');
+     WriteLn('sizeof_connect_t = ',  uv_req_size(UV_CONNECT),';');
+     WriteLn('sizeof_write_t = ',    uv_req_size(UV_WRITE_),';');
+     WriteLn('sizeof_shutdown_t = ', uv_req_size(UV_SHUTDOWN_),';');
+     WriteLn('sizeof_udp_send_t = ', uv_req_size(UV_UDP_SEND_),';');
+     WriteLn('sizeof_fs_t = ',       uv_req_size(UV_FS),';');
+     WriteLn('sizeof_work_t = ',     uv_req_size(UV_WORK),';');
+     WriteLn('sizeof_addrinfo_t = ', uv_req_size(UV_GETADDRINFO_),';');
+     WriteLn('sizeof_nameinfo_t = ', uv_req_size(UV_GETNAMEINFO_),';');
 
-      WriteLn('sizeof_rwlock_t = ', uv_rwlock_size );
-      WriteLn('sizeof_cond_t = ',   uv_cond_size );
-      WriteLn('sizeof_barrier_t = ', uv_barrier_size );
-      WriteLn('sizeof_mutex_t = ',   uv_mutex_size );
+     WriteLn('sizeof_rwlock_t = ', uv_rwlock_size ,';');
+     WriteLn('sizeof_cond_t = ',   uv_cond_size ,';');
+     WriteLn('sizeof_barrier_t = ', uv_barrier_size ,';');
+     WriteLn('sizeof_mutex_t = ',   uv_mutex_size ,';');
 
   end;
 

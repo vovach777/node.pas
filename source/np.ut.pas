@@ -79,7 +79,7 @@ function trimar(const ar: TArray<string>) : TArray<string>;
 implementation
     uses
       {$IFDEF MSWINDOWS}
-      windows,
+      WinApi.Windows,
       {$ENDIF}
       {$IFDEF POSIX}
         Posix.SysTime,

@@ -137,7 +137,7 @@ implementation
 
 uses
 {$IFDEF MSWINDOWS}
-  windows,
+  WinApi.Windows,
 {$ENDIF}
 RTLConsts;
 

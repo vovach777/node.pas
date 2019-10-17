@@ -6,6 +6,8 @@ program ex01_LoopTTY;
 
 uses
   System.SysUtils,
+  np.libuv,
+  np.OpenSSL,
   np.Core,
   np.Buffer,
   np.Ut;
@@ -17,7 +19,9 @@ begin
         begin
           if stdout.is_tty then
           begin
-            stdout.PrintLn(#27'[1;32m'+TOSVersion.ToString+#27'[m');
+            stdout.PrintLn(#27'[1;32m'+TOSVersion.ToString+#27'[0m');
+            stdout.PrintLn(#27'[32mLibuv version: '#27'[1;35m'+uv_version_string+#27'[0m');
+            stdout.PrintLn(#27'[32mOpenSSL version: '#27'[1;36m'+OpenSSL_version(t_OPENSSL_VERSION)+#27'[0m');
             stdout.PrintLn('type `exit`');
           end
           else

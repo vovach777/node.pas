@@ -60,6 +60,15 @@ type
      PAnsiChar = MarshaledAString;
    {$ENDIF}
 
+const
+  t_OPENSSL_VERSION  =    0;
+  t_OPENSSL_CFLAGS   =    1;
+  t_OPENSSL_BUILT_ON =    2;
+  t_OPENSSL_PLATFORM =    3;
+  t_OPENSSL_DIR      =    4;
+  t_OPENSSL_ENGINES_DIR = 5;
+
+   function OpenSSL_version(t: integer) : pansichar; cdecl; external LIBCRYPTO;
 
 
 // ---- init lib -----
