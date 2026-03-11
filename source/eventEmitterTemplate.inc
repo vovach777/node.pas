@@ -193,10 +193,12 @@ end;
 
 procedure TEventEmitter.emit(eventId: integer; eventArguments: Pointer=nil);
 var
-  tmp : PLinked;
+  tmp,last : PLinked;
   qi : TEventHandler;
   i : integer;
 begin
+  if head = nil then
+    exit;
   inc( emitCount );
   try
   assert(EventId <> 0);
@@ -208,6 +210,8 @@ begin
       assert(assigned(tmp.Item));
       tmp.Item.invoke(eventArguments);
     end;
+    if tmp = last then
+      break;
     tmp := tmp.Next;
   end;
   finally
