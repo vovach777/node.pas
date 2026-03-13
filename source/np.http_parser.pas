@@ -89,7 +89,7 @@ function http_parser_version : cardinal; cdecl; external HTTP_PARSER_LIB;
 function http_parser_get_method(const parser : Thttp_parser) : THttp_method; cdecl; external HTTP_PARSER_LIB;
 function http_parser_get_status_code(const parser : Thttp_parser) : THttp_status; cdecl; external HTTP_PARSER_LIB;
 function http_parser_get_http_errno(const parser : Thttp_parser) : Thttp_errno; cdecl; external HTTP_PARSER_LIB;
-function http_parser_get_upgrade(const parser : Thttp_parser) : Cardinal; cdecl; external HTTP_PARSER_LIB;
+//function http_parser_get_upgrade(const parser : Thttp_parser) : Cardinal; cdecl; external HTTP_PARSER_LIB;
 function http_parser_get_flags(const parser : Thttp_parser) : Thttp_flags; cdecl; external HTTP_PARSER_LIB;
 
 

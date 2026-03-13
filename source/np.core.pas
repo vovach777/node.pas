@@ -2438,7 +2438,7 @@ end;
 
 function TNPSpawn.getPID: integer;
 begin
-  result := uv_get_process_pid(FProcess);
+  result := uv_process_get_pid(FProcess);
 end;
 
 function TNPSpawn.GetStdio(inx: integer): puv_stdio_container_t;

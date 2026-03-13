@@ -186,36 +186,36 @@ const
 const
   LIBUV_FILE = NODEPAS_LIB;
 
-  sizeof_loop_t = 464;
-  sizeof_async_t = 224;
-  sizeof_check_t = 120;
-  sizeof_fs_event_t = 272;
-  sizeof_fs_poll_t = 104;
-  sizeof_handle_t = 96;
-  sizeof_idle_t = 120;
-  sizeof_pipe_t = 576;
-  sizeof_poll_t = 416;
-  sizeof_prepare_t = 120;
-  sizeof_process_t = 264;
-  sizeof_stream_t = 272;
-  sizeof_tcp_t = 320;
-  sizeof_timer_t = 160;
-  sizeof_tty_t = 344;
-  sizeof_udp_t = 424;
-  sizeof_signal_t = 264;
-  sizeof_req_t = 112;
-  sizeof_connect_t = 128;
-  sizeof_write_t = 176;
-  sizeof_shutdown_t = 128;
-  sizeof_udp_send_t = 128;
-  sizeof_fs_t = 456;
-  sizeof_work_t = 176;
-  sizeof_addrinfo_t = 216;
-  sizeof_nameinfo_t = 1368;
-  sizeof_rwlock_t = 80;
-  sizeof_cond_t = 64;
-  sizeof_barrier_t = 64;
-  sizeof_mutex_t = 40;
+sizeof_loop_t = 472;
+sizeof_async_t = 224;
+sizeof_check_t = 120;
+sizeof_fs_event_t = 272;
+sizeof_fs_poll_t = 104;
+sizeof_handle_t = 96;
+sizeof_idle_t = 120;
+sizeof_pipe_t = 576;
+sizeof_poll_t = 416;
+sizeof_prepare_t = 120;
+sizeof_process_t = 264;
+sizeof_stream_t = 272;
+sizeof_tcp_t = 320;
+sizeof_timer_t = 160;
+sizeof_tty_t = 344;
+sizeof_udp_t = 424;
+sizeof_signal_t = 264;
+sizeof_req_t = 112;
+sizeof_connect_t = 128;
+sizeof_write_t = 176;
+sizeof_shutdown_t = 128;
+sizeof_udp_send_t = 128;
+sizeof_fs_t = 456;
+sizeof_work_t = 176;
+sizeof_addrinfo_t = 216;
+sizeof_nameinfo_t = 1368;
+sizeof_rwlock_t = 80;
+sizeof_cond_t = 64;
+sizeof_barrier_t = 64;
+sizeof_mutex_t = 40;
 
 {$ENDIF}
 {$IFDEF MSWINDOWS}
@@ -787,7 +787,7 @@ function uv_has_ref(const handle: puv_handle_t): integer; cdecl;
 
 procedure uv_update_time(loop: puv_loop_t); cdecl;
 
-function uv_no(loop: puv_loop_t): UInt64; cdecl;
+//function uv_no(loop: puv_loop_t): UInt64; cdecl;
 
 function uv_backend_fd(const loop: puv_loop_t): integer; cdecl;
 
@@ -1252,7 +1252,7 @@ function uv_spawn(loop: puv_loop_t; handle: puv_process_t;
 function uv_process_kill(process: puv_process_t; signum: integer)
   : integer; cdecl;
 
-function uv_process_getpid(process: puv_process_t): uv_pid_t; cdecl;
+function uv_process_get_pid(process: puv_process_t): uv_pid_t; cdecl;
 
 function uv_kill(pid: uv_pid_t; signum: integer): integer; cdecl;
 (*
@@ -1659,8 +1659,8 @@ function uv_sem_size(): SIZE_T; cdecl;
 function uv_mutex_size(): SIZE_T; cdecl;
 function uv_os_sock_size(): SIZE_T; cdecl;
 function uv_os_fd_size(): SIZE_T; cdecl;
-function uv_tcp_accept_size(): SIZE_T; cdecl;
-function uv_pipe_accept_size(): SIZE_T; cdecl;
+//function uv_tcp_accept_size(): SIZE_T; cdecl;
+//function uv_pipe_accept_size(): SIZE_T; cdecl;
 // function uv_buf_size() : SIZE_T; cdecl;
 
 procedure uv_set_close_cb(h: puv_handle_t; close_cb: uv_close_cb); cdecl;
@@ -1671,7 +1671,7 @@ procedure uv_set_user_data(h: Pointer; data: Pointer); cdecl;
 function uv_get_user_data(h: Pointer): Pointer; cdecl;
 function uv_get_req_type(t: puv_req_t): uv_req_type; cdecl;
 // function uv_process_options_size : SIZE_T; cdecl;
-function uv_get_process_pid(h: puv_process_t): integer; cdecl;
+//function uv_get_process_pid(h: puv_process_t): integer; cdecl;
 
 function uv_now(loop: puv_loop_t): UInt64; cdecl;
 
@@ -1737,7 +1737,7 @@ function uv_has_ref; external LIBUV_FILE;
 
 procedure uv_update_time; external LIBUV_FILE;
 
-function uv_no; external LIBUV_FILE;
+//function uv_no; external LIBUV_FILE;
 
 function uv_backend_fd; external LIBUV_FILE;
 
@@ -1925,7 +1925,7 @@ function uv_spawn; external LIBUV_FILE;
 
 function uv_process_kill; external LIBUV_FILE;
 
-function uv_process_getpid; external LIBUV_FILE;
+function uv_process_get_pid; external LIBUV_FILE;
 
 function uv_kill; external LIBUV_FILE;
 
@@ -2178,8 +2178,8 @@ function uv_sem_size; external LIBUV_FILE;
 function uv_mutex_size; external LIBUV_FILE;
 function uv_os_sock_size; external LIBUV_FILE;
 function uv_os_fd_size; external LIBUV_FILE;
-function uv_tcp_accept_size; external LIBUV_FILE;
-function uv_pipe_accept_size; external LIBUV_FILE;
+//function uv_tcp_accept_size; external LIBUV_FILE;
+//function uv_pipe_accept_size; external LIBUV_FILE;
 // function uv_buf_size; external LIBUV_FILE;
 // function uv_process_options_size; external LIBUV_FILE;
 
@@ -2190,7 +2190,7 @@ procedure uv_set_user_data; external LIBUV_FILE;
 function uv_get_user_data; external LIBUV_FILE;
 function uv_get_req_type; external LIBUV_FILE;
 
-function uv_get_process_pid; external LIBUV_FILE;
+//function uv_get_process_pid; external LIBUV_FILE;
 
 function uv_now; external LIBUV_FILE;
 
