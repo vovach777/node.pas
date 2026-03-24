@@ -1,4 +1,4 @@
-{.$DEFINE CAPTURE_WRITE_BUF}
+{$DEFINE CAPTURE_WRITE_BUF}
 unit np.core;
 
 interface
@@ -20,9 +20,10 @@ interface
     TQueueItem = class(TInterfacedObject, IQueueItem)
     private
       proc: TProc;
-      constructor Create(p: TProc);
       procedure Cancel;
       procedure Invoke;
+    public
+      constructor Create(p: TProc);
       destructor Destroy; override;
     end;
 
@@ -108,7 +109,7 @@ interface
       function is_writable: Boolean;
       procedure setOnData(onData: TProc<PBufferRef>);
       procedure setOnEnd(onEnd: TProc);
-      procedure setOnClose(onCloce: Tproc);
+//      procedure setOnClose(onCloce: Tproc);
       procedure setOnError(OnError: TProc<PNPError>);
       procedure write(const data: BufferRef; Acallback: TProc=nil); overload;
       procedure write(const data: UTF8String; Acallback: TProc=nil); overload;
@@ -143,7 +144,7 @@ interface
      ['{E20EB1A4-7A85-4C09-9FA5-FF821C68CEEE}']
        procedure setOnClient(OnClose: TOnTCPClient);
        procedure setOnError(OnError: TProc<PNPError>);
-       procedure setOnClose(OnClose: TProc);
+//       procedure setOnClose(OnClose: TProc);
        procedure bind(const Aaddr: UTF8String; Aport: word);
        procedure bind6(const Aaddr: UTF8String; Aport: word; tcp6Only: Boolean=false);
        procedure set_nodelay(enable:Boolean);
@@ -455,7 +456,7 @@ interface
        __buf:    TBytes;
   protected
        procedure open( sock: uv_os_sock_t );
-       function  uvudp : puv_udp_t; inline;
+       function  uvudp : puv_udp_t;
        procedure bind(const Aaddr: uv_sockAddr; flags : TUDPBindFlags);
        function  getpeername : uv_sockAddr;
        function  getsockname : uv_sockAddr;
@@ -534,7 +535,7 @@ const
 
 implementation
  {$IFDEF MSWINDOWS}
-  uses WinApi.Windows, np.fs;
+  uses Windows, np.fs;
 {$ELSE}
   uses np.fs;
  {$ENDIF}
@@ -2196,34 +2197,26 @@ begin
 end;
 
 constructor TNPSTDOUT.Create(fd: uv_os_fd_t);
-var
-  ht : uv_handle_type;
-  fd2 :  uv_os_fd_t;
-
 begin
     FHandleType := uv_guess_handle(fd);
     case FHandleType of
       UV_TTY:
          begin
-            //OutputDebugString('stdout => tty');
             FStream := TNPTTY.Create(fd);
          end;
       UV_NAMED_PIPE:
         begin
-           //OutputDebugString('try => pipe');
            INPPipe( FStream ):= TNPPipe.Create;
            INPPipe( FStream ).open(fd);
            //raise Exception.Create('Can not create tty!');
         end;
       UV_FILE_:
          begin
-           //OutputDebugString('stdout => file');
            FUVFile := uv_get_osfhandle( fd );
            assert(FUVFile <> INVALID_HANDLE_VALUE);
          end
       else
       begin
-           //OutputDebugString(PChar(Format('stdout => type(%d)',[ord(ht)])));
            raise Exception.Create('Init stdout failed!');
       end;
     end;
@@ -2244,32 +2237,18 @@ end;
 procedure TNPSTDOUT.flush;
 var
    buf: TBytes;
-   buf2: BufferRef;
 begin
-  if pBuf = '' then
-    exit;
-  if is_pipe then
+  if pBuf <> '' then
   begin
-     FStream.write(pbuf);
-    //BUG WA
-//     buf2 := Buffer.Create(pBuf);
-//     FStream.write(buf2,
-//             procedure
-//             begin
-//               buf2 := Buffer.Null;
-//             end);
-  end
-  else
-  if is_tty then
-     FStream.write(pbuf)
-  else
-  if is_file then
-  begin
-    SetLength(buf,length(pbuf));
-    move(pbuf[1],buf[0], length(pbuf));
-    fs.write(FUVFile,buf,nil);
+    if is_file then
+    begin
+      SetLength(buf,length(pbuf));
+      move(pbuf[1],buf[0], length(pbuf));
+      fs.write(FUVFile,buf,nil);
+    end else
+      FStream.write(pbuf);
+    pbuf := '';
   end;
-  pbuf := '';
 end;
 
 function TNPSTDOUT.get_file: uv_file;
@@ -2939,4 +2918,5 @@ end;
 
 
 end.
+
 

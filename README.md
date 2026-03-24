@@ -36,3 +36,9 @@ NodeJS-like ecosystem
 - There is no Streams for now!
 - There is no documentation yet. But since the syntax is close to Node, it will be easy to understand the examples presented.
 
+## FPC / Lazarus Support
+This project is fully compatible with Free Pascal Compiler (FPC).
+To use it in Lazarus:
+1. Open `NodePas.lpk` in Lazarus.
+2. Click "Compile" to build the package.
+3. Add the package as a requirement to your project or add the `source` directory to your project's search path.

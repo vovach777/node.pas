@@ -1,7 +1,7 @@
-program ex07_gui;
+﻿program ex07_gui;
 
 uses
-  Vcl.Forms,
+  Forms,
   ex07_mainForm in 'ex07_mainForm.pas' {Form1};
 
 {$R *.res}
@@ -12,3 +12,4 @@ begin
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.
+

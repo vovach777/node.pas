@@ -6,12 +6,12 @@ program ex06_eventEmitter;
 
 uses
   windows,
-  System.SysUtils,
-   np.core,
-   np.eventEmitter,
-   System.Diagnostics,
-   System.Threading,
-   System.Classes;
+  Classes,
+  SysUtils,
+  np.common,
+  np.core,
+  np.eventEmitter,
+  System.Diagnostics;
 
   const
      ev_Name = 1000;
@@ -29,15 +29,14 @@ uses
         name: string;
         phoneNo: int64;
      end;
-
   var
     eventEmitter : TEventEmitter;
 
   procedure sub;
   var
     eh : IEventHandler;
-    p  : TProc;
     i : integer;
+    sw : TStopwatch;
   begin
       eventEmitter.on_(ev_Name,
         procedure(arg: Pointer)
@@ -131,7 +130,7 @@ uses
 
       // 3. Benchmarking
       WriteLn('--- Registration Benchmark (1,000,000 subscribers) ---');
-      var sw := TStopwatch.StartNew;
+      sw := TStopwatch.StartNew;
       for i := 1 to 1000000 do
         eventEmitter.on_(ev_bench_empty, procedure begin end);
       sw.Stop;
@@ -204,3 +203,4 @@ begin
       Writeln(E.ClassName, ': ', E.Message);
   end;
 end.
+

@@ -36,6 +36,9 @@
         <Projects Include="samples\ex09_tcp_mt.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="checkLib\Tests.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -143,49 +146,28 @@
     <Target Name="ex09_tcp_mt:Make">
         <MSBuild Projects="samples\ex09_tcp_mt.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Tests">
+        <MSBuild Projects="checkLib\Tests.dproj"/>
+    </Target>
+    <Target Name="Tests:Clean">
+        <MSBuild Projects="checkLib\Tests.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Tests:Make">
+        <MSBuild Projects="checkLib\Tests.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="Node_pas;CheckLib;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread;ex06_eventEmitter;ex07_gui;ex08_httpServer;ex09_tcp_mt"/>
+        <CallTarget Targets="Node_pas;CheckLib;ex01_LoopTTY;ex02_Timers;ex03_spawn;ex04_tcp;ex05_thread;ex06_eventEmitter;ex07_gui;ex08_httpServer;ex09_tcp_mt;Tests"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="Node_pas:Clean;CheckLib:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean;ex06_eventEmitter:Clean;ex07_gui:Clean;ex08_httpServer:Clean;ex09_tcp_mt:Clean"/>
+        <CallTarget Targets="Node_pas:Clean;CheckLib:Clean;ex01_LoopTTY:Clean;ex02_Timers:Clean;ex03_spawn:Clean;ex04_tcp:Clean;ex05_thread:Clean;ex06_eventEmitter:Clean;ex07_gui:Clean;ex08_httpServer:Clean;ex09_tcp_mt:Clean;Tests:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="Node_pas:Make;CheckLib:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make;ex06_eventEmitter:Make;ex07_gui:Make;ex08_httpServer:Make;ex09_tcp_mt:Make"/>
+        <CallTarget Targets="Node_pas:Make;CheckLib:Make;ex01_LoopTTY:Make;ex02_Timers:Make;ex03_spawn:Make;ex04_tcp:Make;ex05_thread:Make;ex06_eventEmitter:Make;ex07_gui:Make;ex08_httpServer:Make;ex09_tcp_mt:Make;Tests:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
     <ItemGroup Condition="'$(BuildGroup)'=='buildGrp'">
-        <BuildGroupProject Include="samples\ex08_httpServer.dproj">
-            <ProjectGuid>{A6C6D353-2AA8-48F7-91E8-CBC143A5A2B7}</ProjectGuid>
-            <Configurations/>
-            <Platforms/>
-            <Enabled>False</Enabled>
-        </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex02_Timers.dproj">
-            <ProjectGuid>{EE208C23-FE63-4409-8798-EF134574F006}</ProjectGuid>
-            <Configurations/>
-            <Platforms/>
-            <Enabled>False</Enabled>
-        </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
-            <ProjectGuid>{460E0BED-7FF6-4C08-957B-69B30F854DA5}</ProjectGuid>
-            <Configurations/>
-            <Platforms/>
-            <Enabled>False</Enabled>
-        </BuildGroupProject>
         <BuildGroupProject Include="samples\ex03_spawn.dproj">
             <ProjectGuid>{C34BBE46-7199-4D85-B112-6493646B092E}</ProjectGuid>
-            <Configurations/>
-            <Platforms/>
-            <Enabled>False</Enabled>
-        </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex07_gui.dproj">
-            <ProjectGuid>{3B115842-32DC-4273-A1AD-BF3606A7D446}</ProjectGuid>
-            <Configurations/>
-            <Platforms/>
-            <Enabled>False</Enabled>
-        </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex05_thread.dproj">
-            <ProjectGuid>{98568C50-5310-4C7B-AD95-0A980157F58E}</ProjectGuid>
             <Configurations/>
             <Platforms/>
             <Enabled>False</Enabled>
@@ -196,16 +178,28 @@
             <Platforms/>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="checkLib\CheckLib.dproj">
-            <ProjectGuid>{0B6B6303-A6F8-4CD7-82AA-18A6D8AC3D5A}</ProjectGuid>
-            <Configurations/>
-            <Platforms/>
-            <Enabled>False</Enabled>
-        </BuildGroupProject>
         <BuildGroupProject Include="Node.pas.dproj">
             <ProjectGuid>{FD0E68FE-931A-410D-B34D-08FD3E6B4486}</ProjectGuid>
             <Configurations>Debug</Configurations>
             <Platforms>Win32</Platforms>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex09_tcp_mt.dproj">
+            <ProjectGuid>{AC4607AA-6764-43BC-8982-A94CD5D49A03}</ProjectGuid>
+            <Configurations/>
+            <Platforms/>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex05_thread.dproj">
+            <ProjectGuid>{98568C50-5310-4C7B-AD95-0A980157F58E}</ProjectGuid>
+            <Configurations/>
+            <Platforms/>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex01_LoopTTY.dproj">
+            <ProjectGuid>{460E0BED-7FF6-4C08-957B-69B30F854DA5}</ProjectGuid>
+            <Configurations/>
+            <Platforms/>
             <Enabled>False</Enabled>
         </BuildGroupProject>
         <BuildGroupProject Include="samples\ex04_tcp.dproj">
@@ -214,10 +208,34 @@
             <Platforms/>
             <Enabled>False</Enabled>
         </BuildGroupProject>
-        <BuildGroupProject Include="samples\ex09_tcp_mt.dproj">
-            <ProjectGuid>{AC4607AA-6764-43BC-8982-A94CD5D49A03}</ProjectGuid>
+        <BuildGroupProject Include="samples\ex08_httpServer.dproj">
+            <ProjectGuid>{A6C6D353-2AA8-48F7-91E8-CBC143A5A2B7}</ProjectGuid>
             <Configurations/>
             <Platforms/>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex07_gui.dproj">
+            <ProjectGuid>{3B115842-32DC-4273-A1AD-BF3606A7D446}</ProjectGuid>
+            <Configurations/>
+            <Platforms/>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="checkLib\CheckLib.dproj">
+            <ProjectGuid>{0B6B6303-A6F8-4CD7-82AA-18A6D8AC3D5A}</ProjectGuid>
+            <Configurations/>
+            <Platforms/>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="samples\ex02_Timers.dproj">
+            <ProjectGuid>{EE208C23-FE63-4409-8798-EF134574F006}</ProjectGuid>
+            <Configurations/>
+            <Platforms/>
+            <Enabled>False</Enabled>
+        </BuildGroupProject>
+        <BuildGroupProject Include="checkLib\Tests.dproj">
+            <ProjectGuid>{628EF66D-3586-4716-90F5-3E701792CB8E}</ProjectGuid>
+            <Configurations>Debug</Configurations>
+            <Platforms>Win32</Platforms>
             <Enabled>False</Enabled>
         </BuildGroupProject>
     </ItemGroup>

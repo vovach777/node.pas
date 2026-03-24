@@ -94,7 +94,6 @@ type
 //        function ProcessNext : Boolean;
 //        procedure processBuf;
         procedure setOnRequest(proc: TProc);
-        procedure onClose; override;
         procedure do_handshake;
         procedure do_shutdown;
         function GetReqBody : BufferRef;
@@ -104,6 +103,8 @@ type
         procedure InitRequest;
         procedure SetData(const key: string; const Value : IValue);
         function  GetData(const key: string) : IValue;
+    protected
+        procedure onClose; override;
      public
         constructor Create( server: INPTCPServer; Actx : TSSL_CTX);
         destructor Destroy;override;

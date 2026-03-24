@@ -5,7 +5,7 @@
         <DCC_DcuOutput>..\build\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>..\build\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_UsePackage>RESTComponents;emsclientfiredac;FireDACIBDriver;emsclient;FireDACCommon;RESTBackendComponents;soapserver;CloudService;FireDACCommonDriver;inet;FireDAC;FireDACSqliteDriver;soaprtl;soapmidas;$(DCC_UsePackage)</DCC_UsePackage>
-        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_Namespace>WinApi;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <SanitizedProjectName>CheckLib</SanitizedProjectName>
         <DCC_UnitSearchPath>..\build\$(Platform)\$(Config);$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_BpiOutput>..\$(Platform)\$(Config)\cpp</DCC_BpiOutput>

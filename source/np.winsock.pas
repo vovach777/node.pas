@@ -183,7 +183,7 @@ To deal with this, I use the FPC predefined FPC_REQUIRES_PROPER_ALIGNMENT.
 //{$ENDIF}
 
 uses
-  System.SysUtils, WinApi.Windows, np.common;
+  SysUtils, Windows, np.common;
 
 type
   SIZE_T = NativeUint;
@@ -5150,10 +5150,10 @@ begin
       if LError = 0 then begin
         Exit;
       end;
-      WinApi.Windows.FreeLibrary(hWinSockDll);
+      Windows.FreeLibrary(hWinSockDll);
       hWinSockDll := 0;
     end else begin
-      LError := WinApi.Windows.GetLastError;
+      LError := Windows.GetLastError;
     end;
     raise EIdWinsockStubError.Build(LError, RSWinsockLoadError, [WINSOCK2_DLL]);
   end;
@@ -5166,7 +5166,7 @@ begin
   if hMSWSockDll = 0 then begin
     hMSWSockDll := SafeLoadLibrary(MSWSOCK_DLL);
     if hMSWSockDll = 0 then begin
-      raise EIdWinsockStubError.Build(WinApi.Windows.GetLastError, RSWinsockLoadError, [MSWSOCK_DLL]);
+      raise EIdWinsockStubError.Build(Windows.GetLastError, RSWinsockLoadError, [MSWSOCK_DLL]);
     end;
   end;
 end;
@@ -5189,7 +5189,7 @@ begin
   end;
 end;
 
-constructor EIdWinsockStubError.Build(AWin32Error: DWORD; const ATitle: String; AArgs: array of const);
+constructor EIdWinsockStubError.Build(AWin32Error: DWORD; const ATitle: String; AArgs : array of const);
 begin
   FTitle := Format(ATitle, AArgs, TFormatSettings.Create);
   FWin32Error := AWin32Error;
@@ -5197,7 +5197,7 @@ begin
     inherited Create(FTitle);
   end else
   begin
-    FWin32ErrorMessage := System.SysUtils.SysErrorMessage(AWin32Error);
+    FWin32ErrorMessage := SysUtils.SysErrorMessage(AWin32Error);
     inherited Create(FTitle + ': ' + FWin32ErrorMessage);    {Do not Localize}
   end;
 end;
@@ -5209,15 +5209,15 @@ a version of GetProcAddress in the FreePascal dynlibs unit but that does a
 conversion from ASCII to Unicode which might not be necessary since most calls
 pass a constant anyway.
 }
-function FixupStub(hDll: THandle; const AName:{$IFDEF WINCE}TIdUnicodeString{$ELSE}string{$ENDIF}): Pointer;
+function FixupStub(hDll: THandle; const AName: AnsiString): Pointer;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   if hDll = 0 then begin
-    raise EIdWinsockStubError.Build(WSANOTINITIALISED, RSWinsockCallError, [AName]);
+    raise EIdWinsockStubError.Build(WSANOTINITIALISED, RSWinsockCallError, [string(AName)]);
   end;
-  Result := WinApi.Windows.GetProcAddress(hDll, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(AName));
+  Result := Windows.GetProcAddress(hDll, PAnsiChar(AName));
   if Result = nil then begin
-    raise EIdWinsockStubError.Build(WSAEINVAL, RSWinsockCallError, [AName]);
+    raise EIdWinsockStubError.Build(WSAEINVAL, RSWinsockCallError, [string(AName)]);
   end;
 end;
 
@@ -6518,7 +6518,7 @@ end;
 function IN6_ADDR_EQUAL(const a: PIn6Addr; const b: PIn6Addr): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  Result := System.SysUtils.CompareMem(a, b, SIZE_TIN6ADDR);
+  Result := SysUtils.CompareMem(a, b, SIZE_TIN6ADDR);
 end;
 
 function IN6_IS_ADDR_UNSPECIFIED(const a: PIn6Addr): Boolean;
@@ -6766,5 +6766,6 @@ finalization
 {$ENDIF}
 
 end.
+
 
 

@@ -13,7 +13,7 @@ interface
        ContentType   : Utf8String;
        ContentCharset: Utf8String;
        procedure  parse(ABuf : BufferRef);
-       function ToString: string; override;
+       function ToString: string; {$IFNDEF FPC}override;{$ENDIF}
        constructor Create(const ABuf: BufferRef);
        destructor Destroy; override;
        procedure addField(const key, value: Utf8String);

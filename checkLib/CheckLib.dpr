@@ -5,7 +5,7 @@ program checkLib;
 {$R *.res}
 
 uses
-  System.SysUtils,
+  SysUtils,
   np.openSSL,
   np.libuv,
   np.Core,

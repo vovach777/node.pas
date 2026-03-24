@@ -2,7 +2,8 @@ unit np.ut;
 
 interface
   uses
-    SysUtils;
+    SysUtils,
+    np.Common;
 
 //  {$IFDEF }
 //       type
@@ -14,6 +15,9 @@ interface
      UTF8Char = AnsiChar;
      PUTF8Char = PAnsiChar;
 {$ENDIF}
+
+type
+   TTokenMap = TFunc<string,string>;
 
 const
   CP_USASCII = 20127;
@@ -70,8 +74,6 @@ function StrRemoveQuote(const s :string) : string;
 function DecodeJSONText(const JSON : string; var Index: Integer) : string;
 
 function UnicodeSameText(const A1,A2 : String) : Boolean;
-type
-   TTokenMap = TFunc<string,string>;
 
 function macros(const templ: string; const macroOpen,macroClose: string; const mapFunc : TTokenMap; macroInsideMacro:Boolean=false ) : string;
 function trimar(const ar: TArray<string>) : TArray<string>;
@@ -79,7 +81,7 @@ function trimar(const ar: TArray<string>) : TArray<string>;
 implementation
     uses
       {$IFDEF MSWINDOWS}
-      WinApi.Windows,
+      Windows,
       {$ENDIF}
       {$IFDEF POSIX}
         Posix.SysTime,
@@ -186,6 +188,8 @@ var
   Quote : Boolean;
   level : integer;
 begin
+   result := ''; //make fpc happy
+   s := ''; //make fpc happy
    Quote := False;
    level := 0;
    //pass1 : remove spaces
@@ -362,14 +366,14 @@ begin
   result := copy(s,1,L);
 end;
 
-
+(*
 const
  http_day_of_week : array [0..6] of string = ( 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' );
  http_month : array [1..12] of string = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
  var
  g_tickCount : Cardinal = 0;
  g_lock_current_httpTime : integer = 0;
-
+*)
 
 function PosEx(const SubStr, Str: string; Skip: INTEGER): Integer;
 var
@@ -595,6 +599,7 @@ var
   label LoopInit;
 begin
   Result := 0;
+  AResult := nil; //make fpc happy
   Content := PUTF8Char(AContent);
   Tail := Content;
   inQ := false;
@@ -639,6 +644,7 @@ var
 //  WhiteSpace: TSysCharSet;
 begin
   Result := 0;
+  AResult := nil; //make fpc happy
   Content := PChar(AContent);
   Tail := Content;
   InQuote := false;
@@ -1070,4 +1076,5 @@ end;
 
 
 end.
+
 

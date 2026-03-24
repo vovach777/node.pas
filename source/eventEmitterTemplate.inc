@@ -44,6 +44,7 @@ type
       function  GetID: integer;
       procedure remove;
       procedure invoke(args: Pointer);
+    public
       Constructor Create();
       destructor Destroy;override;
     end;

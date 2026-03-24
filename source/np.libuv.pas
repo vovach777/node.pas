@@ -5,7 +5,7 @@ interface
 
 {$IFDEF MSWINDOWS}
 
-uses np.common, WinApi.Windows, np.winsock, System.sysUtils;
+uses np.common, Windows, np.winsock, SysUtils;
 {$ENDIF}
 {$IFDEF LINUX}
 
@@ -2413,3 +2413,4 @@ uv_replace_allocator(malloc_func, realloc_func, calloc_func, free_func);
 finalization
 
 end.
+

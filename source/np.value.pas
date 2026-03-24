@@ -15,6 +15,10 @@ interface
     spreadId = '...';
 
   type
+  {$IFDEF FPC}
+  TAnyObject = class;
+  TAnyArray = class;
+  {$ENDIF}
 
   IValue = interface
   ['{D95206A4-BAB8-4ADC-882E-DA66B20FDA82}']
@@ -35,6 +39,9 @@ interface
      constructor Create();
      function RTTI: TValue; virtual;
      function GetTypeID: string;
+     {$IFDEF FPC}
+     function ToString : string; virtual;
+     {$ENDIF}
   end;
 
 
@@ -1132,6 +1139,13 @@ begin
    TypeId := ClassName;
 end;
 
+{$IFDEF FPC}
+function TSelfValue.ToString: string;
+begin
+  Result := GetTypeID;
+end;
+{$ENDIF}
+
 function TSelfValue.GetTypeID: string;
 begin
   result := typeId;
@@ -1185,7 +1199,7 @@ begin
          end;
 {$IFNDEF NEXTGEN}
      tkWString,
-     tkString,
+     {$IFDEF FPC}tkSString, tkAString,{$ELSE}tkString,{$ENDIF}
 {$ENDIF}
      tkLString,
      tkUString:

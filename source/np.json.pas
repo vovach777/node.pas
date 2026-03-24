@@ -1,7 +1,7 @@
 unit np.json;
 
 interface
-  uses sysUtils, Generics.Collections;
+  uses sysUtils, Generics.Collections, np.common;
 
   type
     TJSONType = (json_null, json_int, json_text, json_object, json_array, json_boolean);
@@ -56,7 +56,7 @@ interface
       class function DecodeJSONText(const JSON : string): string; overload; static;
       class function DecodeJSONText(const JSON : string; var Index: Integer): string; overload; static;
 
-      function ToString : string; override;
+      function ToString : string; {$IFNDEF FPC}override;{$ENDIF}
       function CreateJSONPair: TJSONPair; virtual;
       function IsArray  : TJSONArray;
       function IsObject : TJSONObject;

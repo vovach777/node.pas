@@ -137,7 +137,7 @@ implementation
 
 uses
 {$IFDEF MSWINDOWS}
-  WinApi.Windows,
+  Windows,
 {$ENDIF}
 RTLConsts;
 
@@ -889,13 +889,13 @@ begin
             Inc(Sp);
             case Sp^ of
               'a':
-                if AnsiStrPos(Sp, 'amp;') = Sp then { do not localize }
+                if StrPos(Sp, 'amp;') = Sp then { do not localize }
                 begin
                   Inc(Sp, 3);
                   Rp^ := '&';
                 end;
               'l', 'g':
-                if (AnsiStrPos(Sp, 'lt;') = Sp) or (AnsiStrPos(Sp, 'gt;') = Sp)
+                if (StrPos(Sp, 'lt;') = Sp) or (StrPos(Sp, 'gt;') = Sp)
                 then { do not localize }
                 begin
                   Cp := Sp;
@@ -908,7 +908,7 @@ begin
                     Rp^ := '>';
                 end;
               'q':
-                if AnsiStrPos(Sp, 'quot;') = Sp then { do not localize }
+                if StrPos(Sp, 'quot;') = Sp then { do not localize }
                 begin
                   Inc(Sp, 4);
                   Rp^ := '"';
@@ -988,4 +988,5 @@ finalization
 
 
 end.
+
 

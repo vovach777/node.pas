@@ -1,11 +1,11 @@
-program ex05_thread;
+﻿program ex05_thread;
 
 {$APPTYPE CONSOLE}
 
 {$R *.res}
 
 uses
-  System.SysUtils,
+  SysUtils,
   np.libuv,
   np.core;
 
@@ -92,5 +92,6 @@ begin
       Writeln(E.ClassName, ': ', E.Message);
   end;
 end.
+
 
 

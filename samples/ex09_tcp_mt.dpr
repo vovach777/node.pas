@@ -5,11 +5,12 @@ program ex09_tcp_mt;
 {$R *.res}
 
 uses
-  System.SysUtils,
+  SysUtils,
   np.Core,
   np.libuv,
   np.buffer,
-  np.Ut;
+  np.Ut,
+  np.common;
 
   const
   {$IFDEF MSWINDOWS}
@@ -304,8 +305,9 @@ begin
    end,1000);
 end;
 
+
+procedure main;
 begin
-  try
     init_workers;
     run_server;
     run_client;
@@ -332,13 +334,17 @@ begin
                             end;
 
                     end);
+end;
+
+begin
+  try
+    main;
     LoopHere;
-//    WriteLn('loop exit');
-//    readln;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
   end;
 end.
+
 
 

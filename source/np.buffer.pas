@@ -55,6 +55,7 @@ interface
         class function Create(const list : array of BufferRef) : BufferRef; overload; static;
         class function CreateFromHex(const hexStr : UTF8String) : BufferRef; static;
         class function Create(stream:TStream) : BufferRef; overload; static;
+        class function CreateFromBase64(const S : string) : BufferRef; static; inline;
 {$IFDEF MSWINDOWS}
         class function CreateFromRCDATA(const resourceId: string): BufferRef; static;
 {$ENDIF}
@@ -114,14 +115,16 @@ begin
     result := Buffer.Create(ref.ref,ref.length);
 end;
 
-class function Buffer.CreateFromHex(const hexStr : UTF8String) : BufferRef;
-var
-  bytes : TBytes;
+class function Buffer.CreateFromBase64(const S: string): BufferRef;
 begin
-   setLength(bytes, Length(hexStr));
-   move(hexStr[1],bytes[0], Length(hexStr) );
+  result := Buffer.Create( TNetEncoding.Base64.DecodeStringToBytes(s) );
+end;
+
+class function Buffer.CreateFromHex(const hexStr : UTF8String) : BufferRef;
+begin
    result := Buffer.Create(system.length(hexStr) div 2);
-   HexToBin(bytes , 0,  result.__ref__, 0, result.length );
+   if result.length > 0 then
+     HexToBin(PAnsiChar(hexStr), PAnsiChar(result.__ref__), result.length);
 end;
 
 class function Buffer.Create(mem: Pointer; _length: Cardinal) : BufferRef;
@@ -494,7 +497,6 @@ begin
   write(idx, BufferRef.CreateWeakRef(@v,sizeof(v)));
 end;
 
-
 procedure optimized_append(var buf: BufferRef; const append: BufferRef);
 var
   avail,idx : integer;
@@ -502,23 +504,23 @@ var
 begin
   if append.length <= 0 then
     exit;
-
-  avail := (PByte(@buf.__ref__[0]) + length(buf.__ref__)) - (buf.ref+buf.length);
-  if avail >= append.length then
+  if (buf.__ref__ <> nil) and (buf.ref = @buf.__ref__[0]) then
   begin
-     idx := buf.length;
-     buf.length := buf.length + append.length;
-     buf.write(idx,append);
-  end
-  else
-  begin
-    avail := buf.length + append.length;
-    tmp := Buffer.Create( (avail shr 1 + avail + 16) and not 15);
-    tmp.write(0,buf);
-    tmp.write(buf.length,append);
-    tmp.length := buf.length + append.length;
-    buf := tmp;
+    avail := (PByte(@buf.__ref__[0]) + length(buf.__ref__)) - (buf.ref+buf.length);
+    if avail >= append.length then
+    begin
+      idx := buf.length;
+      buf.length := buf.length + append.length;
+      buf.write(idx,append);
+      exit;
+    end
   end;
+  avail := buf.length + append.length;
+  tmp := Buffer.Create( (avail shr 1 + avail + 16) and not 15);
+  tmp.write(0,buf);
+  tmp.write(buf.length,append);
+  tmp.length := buf.length + append.length;
+  buf := tmp;
 end;
 
 end.

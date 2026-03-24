@@ -1,11 +1,11 @@
-program ex01_LoopTTY;
+﻿program ex01_LoopTTY;
 
 {$APPTYPE CONSOLE}
 
 {$R *.res}
 
 uses
-  System.SysUtils,
+  SysUtils,
   np.libuv,
   np.OpenSSL,
   np.Core,
@@ -48,5 +48,6 @@ begin
       Writeln(E.ClassName, ': ', E.Message);
   end;
 end.
+
 
 

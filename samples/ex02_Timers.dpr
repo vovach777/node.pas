@@ -1,11 +1,11 @@
-program ex02_Timers;
+﻿program ex02_Timers;
 
 {$APPTYPE CONSOLE}
 
 {$R *.res}
 
 uses
-  System.SysUtils,
+  SysUtils,
   np.Buffer,
   np.Core;
 
@@ -43,3 +43,4 @@ begin
       Writeln(E.ClassName, ': ', E.Message);
   end;
 end.
+
