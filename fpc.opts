@@ -1,0 +1,4 @@
+-O4
+-Mdelphiunicode
+-FEbuild\fpc
+-FUbuild\fpc

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="5">
+    <PathDelim Value="\"/>
+    <Name Value="NodePas"/>
+    <Type Value="RunTimeOnly"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="source"/>
+        <UnitOutputDirectory Value="build\fpc"/>
+      </SearchPaths>
+      <Parsing>
+        <SyntaxOptions>
+          <SyntaxMode Value="DelphiUnicode"/>
+          <CStyleOperator Value="False"/>
+          <IncludeAssertionCode Value="True"/>
+          <CPPInline Value="False"/>
+        </SyntaxOptions>
+      </Parsing>
+      <CodeGeneration>
+        <Optimizations>
+          <OptimizationLevel Value="0"/>
+        </Optimizations>
+      </CodeGeneration>
+    </CompilerOptions>
+    <Files>
+      <Item>
+        <Filename Value="source\np.buffer.pas"/>
+        <UnitName Value="np.buffer"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.buildData.pas"/>
+        <UnitName Value="np.buildData"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.common.pas"/>
+        <UnitName Value="np.common"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.core.pas"/>
+        <UnitName Value="np.core"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.dirmon.pas"/>
+        <HasRegisterProc Value="True"/>
+        <AddToUsesPkgSection Value="False"/>
+        <UnitName Value="np.dirmon"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.eventEmitter.pas"/>
+        <UnitName Value="np.eventEmitter"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.eventEmitter.TAnyObject.pas"/>
+        <UnitName Value="np.eventEmitter.TAnyObject"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.eventEmitter.Tcomponent.pas"/>
+        <UnitName Value="np.eventEmitter.Tcomponent"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.eventEmitter.TInterfacedObject.pas"/>
+        <UnitName Value="np.eventEmitter.TInterfacedObject"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.fs.pas"/>
+        <UnitName Value="np.fs"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.http_parser.pas"/>
+        <UnitName Value="np.http_parser"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.HttpConnect.pas"/>
+        <UnitName Value="np.HttpConnect"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.httpParser.pas"/>
+        <UnitName Value="np.httpParser"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.HttpServer.pas"/>
+        <UnitName Value="np.HttpServer"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.HttpUt.pas"/>
+        <UnitName Value="np.HttpUt"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.json.pas"/>
+        <UnitName Value="np.json"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.libuv.pas"/>
+        <UnitName Value="np.libuv"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.NetEncoding.pas"/>
+        <UnitName Value="np.NetEncoding"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.OpenSSL.pas"/>
+        <UnitName Value="np.OpenSSL"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.promise.pas"/>
+        <UnitName Value="np.promise"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.url.pas"/>
+        <UnitName Value="np.url"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.ut.pas"/>
+        <UnitName Value="np.ut"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.value.pas"/>
+        <UnitName Value="np.value"/>
+      </Item>
+      <Item>
+        <Filename Value="source\np.winsock.pas"/>
+        <UnitName Value="np.winsock"/>
+      </Item>
+    </Files>
+    <RequiredPkgs>
+      <Item>
+        <PackageName Value="FCL"/>
+      </Item>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

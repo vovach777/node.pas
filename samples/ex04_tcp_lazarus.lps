@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="ex04_tcp_lazarus.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <TopLine Value="57"/>
+        <CursorPos Y="102"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\source\np.dirmon.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\source\np.core.pas"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="1632"/>
+        <CursorPos X="52" Y="1659"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\source\np.libuv.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="2272"/>
+        <CursorPos X="52" Y="2284"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\source\np.buffer.pas"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="56"/>
+        <CursorPos Y="83"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="D:\dev\fpcupdeluxe\fpcsrc\rtl\inc\objpash.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="243"/>
+        <CursorPos X="28" Y="270"/>
+        <UsageCount Value="10"/>
+      </Unit>
+    </Units>
+    <Debugger>
+      <Backend Value="{149B62EF-6FAF-466C-83F5-20FF33575ACF}"/>
+    </Debugger>
+    <JumpHistory HistoryIndex="29">
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1571" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1572" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1573" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1726" TopLine="1699"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1727" TopLine="1699"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1731" TopLine="1699"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1574" TopLine="1547"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1662" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1659" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1660" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1661" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1662" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1663" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1567" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1568" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1570" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1571" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1572" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1573" TopLine="1540"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1726" TopLine="1699"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1727" TopLine="1699"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1731" TopLine="1699"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1732" TopLine="1699"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1574" TopLine="1547"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1662" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1666" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1667" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="1659" TopLine="1635"/>
+      </Position>
+      <Position>
+        <Filename Value="ex04_tcp_lazarus.lpr"/>
+        <Caret Line="102" TopLine="57"/>
+      </Position>
+      <Position>
+        <Filename Value="..\source\np.core.pas"/>
+        <Caret Line="617" TopLine="590"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+  <Debugging>
+    <BreakPoints>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="ex04_tcp_lazarus.lpr"/>
+        <Line Value="60"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="ex04_tcp_lazarus.lpr"/>
+        <Line Value="47"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\source\np.core.pas"/>
+        <Line Value="1945"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="ex04_tcp_lazarus.lpr"/>
+        <Line Value="91"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="ex04_tcp_lazarus.lpr"/>
+        <Line Value="91"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\source\np.core.pas"/>
+        <Line Value="1922"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\source\np.core.pas"/>
+        <Line Value="1927"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\source\np.core.pas"/>
+        <Line Value="1659"/>
+      </Item>
+    </BreakPoints>
+  </Debugging>
+</CONFIG>
